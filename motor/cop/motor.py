@@ -29,7 +29,7 @@ class Motor:
         self.servidor = None
         self.cerebro = None
         briefing = sessao.ler_briefing()
-        self.vocabulario = list(self.cfg.get("vocabulario") or []) + list(briefing.get("vocabulario") or [])
+        self.vocabulario = list(self.cfg.get("vocabulario") or []) + list(briefing.get("vocabulario") or []) + config.termos_perfil()
         for k in ("cliente", "empresa", "oferta"):
             if briefing.get(k):
                 self.vocabulario.append(briefing[k])

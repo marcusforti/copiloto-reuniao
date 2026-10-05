@@ -17,6 +17,17 @@ Pasta da sessão (o `iniciar` imprime `SESSAO=…`): `~/CopilotoReuniao/sessoes/
 - `estado.json`: níveis de áudio, alertas e status do motor
 - `resumo.html`: gerado no fim
 
+## Perfil do usuário (o que ele vende e como vende)
+Fica em `~/CopilotoReuniao/perfil/` (`COP perfil --mostrar`). Tem:
+- `perfil.md`, no formato de `perfil-modelo.md`: ofertas, preços, cliente ideal, objeções com as respostas dele, provas, jeito de conduzir, o que nunca prometer e os nomes e termos;
+- opcionalmente `script-de-vendas.md` e outros materiais.
+
+Como usar:
+- **Leia o perfil antes de cada reunião** e use-o em todo conselho.
+- **Se o usuário tem script, o script dele manda:** as fases e as perguntas seguem as etapas dele, e o roteiro do modo só completa o que faltar.
+- **Preços, condições e garantias saem só do perfil ou do briefing.**
+- Criar ou atualizar: `/reuniao-perfil`.
+
 ## Durante a reunião (o loop)
 1. O `/reuniao` inicia o motor e arma o **Monitor** com `COP acompanhar --sessao "<SESSAO>"` (timeout de 30 min; **re-arme sempre que expirar** enquanto a reunião durar: o cursor fica salvo, nada se perde). Não passe a saída por `grep` ou outro filtro: isso segura as linhas e os eventos chegam atrasados.
 2. Cada evento do Monitor traz as falas novas (`[COPILOTO hh:mm:ss] N fala(s) nova(s) | conselhos: <caminho>`).

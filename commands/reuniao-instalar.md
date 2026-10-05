@@ -26,4 +26,8 @@ description: Instala e configura o Copiloto de Reunião (modo grátis no PC ou m
 
 5. **Mac:** rode `bash "${CLAUDE_PLUGIN_ROOT}/instalar/instalar-mac.sh"` para instalar o BlackHole e siga as instruções que ele mostrar (Multi-Output Device).
 
-6. Rode o `/reuniao-teste`. Depois explique que é só digitar `/reuniao venda NomeDoCliente o que você vende` antes da próxima call, e `/reuniao-fim` no final. Para ver como funciona sem reunião: `/reuniao-demo`.
+6. Rode o `/reuniao-teste`.
+
+7. **Perfil do negócio.** Explique: "Agora vou aprender sobre o que você vende, para os conselhos citarem os seus produtos, preços e o seu jeito de vender. Se você já tem um script de vendas, melhor ainda." Siga o `/reuniao-perfil` (arquivo `${CLAUDE_PLUGIN_ROOT}/commands/reuniao-perfil.md`). Se a pessoa estiver com pressa, diga que dá para fazer depois com `/reuniao-perfil`.
+
+8. Explique que é só digitar `/reuniao venda NomeDoCliente` antes da próxima call (o perfil já traz a oferta e o preço) e `/reuniao-fim` no final. Para ver como funciona sem reunião: `/reuniao-demo`.

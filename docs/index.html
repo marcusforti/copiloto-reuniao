@@ -230,7 +230,7 @@
     <p class="lead">Você precisa do Claude Code no computador. O resto ele faz sozinho: baixa, configura e testa o seu microfone.</p>
     <div class="passos">
       <div class="passo"><h3>Copie o pedido</h3><p>O texto abaixo já tem o link do repositório e o passo a passo para o Claude seguir.</p></div>
-      <div class="passo"><h3>Cole no Claude Code</h3><p>Ele instala, pergunta se você quer o modo grátis ou o pago e faz um teste de áudio com você.</p></div>
+      <div class="passo"><h3>Cole no Claude Code</h3><p>Ele instala, testa o seu áudio e pergunta sobre o que você vende: ofertas, preços, objeções e o seu script de vendas, se tiver.</p></div>
       <div class="passo"><h3>Antes da call</h3><p>Digite <code>/reuniao venda Nome-do-cliente o que você vende</code>. O painel abre. No fim, <code>/reuniao-fim</code>.</p></div>
     </div>
     <div class="copiar">
@@ -274,12 +274,24 @@ Siga o arquivo INSTALAR.md do repositório.</pre>
 
 <section class="bloco">
   <div class="wrap">
-    <h2>Testado numa call de verdade. E consertado.</h2>
-    <p class="lead">A primeira versão foi usada numa mentoria real. Três coisas deram errado, e cada uma virou uma proteção desta versão.</p>
+    <h2>Ele aprende o que você vende e como você vende.</h2>
+    <p class="lead">Na instalação, o Claude faz uma entrevista rápida sobre o seu negócio. Se você já tem um script de vendas, é só colar ou indicar o arquivo. A partir daí, cada conselho na call usa os seus produtos, os seus preços, as suas provas e o seu jeito de conduzir.</p>
     <div class="historia">
-      <div class="falha"><p class="antes">Na primeira call</p><h3>A voz do vendedor sumiu</h3><p>O fone mudou de modo quando a reunião começou, e o copiloto continuou ouvindo o microfone antigo.</p><p class="agora">Agora ele segue o microfone que a reunião usa, ouve todas as saídas de áudio e avisa na tela se parar de ouvir alguém.</p></div>
-      <div class="falha"><p class="antes">Na primeira call</p><h3>Faltou memória</h3><p>A transcrição caiu com o navegador aberto, e a troca de emergência para um modelo pior derrubou a qualidade.</p><p class="agora">Agora usa 7 vezes menos memória reservada, tenta de novo sem rebaixar a qualidade e transcreveu 94–96% certo no teste.</p></div>
-      <div class="falha"><p class="antes">Na primeira call</p><h3>Parou com 2 horas</h3><p>A gravação rodava dentro do Claude Code e morreu no limite de tempo das tarefas em segundo plano.</p><p class="agora">Agora o motor roda num processo próprio, sem limite, e retoma o acompanhamento de onde parou.</p></div>
+      <div class="falha"><h3>O que você oferece</h3><p>Produtos, para quem é cada um, o que entrega, preço, parcelamento e garantia. Ele nunca inventa uma condição que você não oferece.</p></div>
+      <div class="falha"><h3>Quem é o seu cliente</h3><p>As dores, os desejos e as objeções que você mais ouve, com a resposta que funciona para você.</p></div>
+      <div class="falha"><h3>O seu script</h3><p>O roteiro que você já usa vira o caminho da call. O copiloto segue as suas etapas, não um método genérico.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="bloco">
+  <div class="wrap">
+    <h2>Feito para o que acontece numa call de verdade.</h2>
+    <p class="lead">Fone que troca de modo, notebook simples, call que passa da hora. Ele foi pensado para não te deixar na mão no meio da conversa.</p>
+    <div class="historia">
+      <div class="falha"><h3>Trocou de fone? Continua ouvindo.</h3><p>Ele segue o microfone que a reunião usa, escuta todas as saídas de som e avisa na tela se parar de ouvir alguém.</p></div>
+      <div class="falha"><h3>Notebook simples? Roda leve.</h3><p>A transcrição grátis usa cerca de 1 GB de memória, e o modo pago quase não pesa. Nos testes, acertou 94% a 96% das palavras.</p></div>
+      <div class="falha"><h3>Call longa? Vai até o fim.</h3><p>A gravação roda separada do Claude Code, sem limite de tempo. Se algo reiniciar, ele continua de onde parou.</p></div>
     </div>
   </div>
 </section>

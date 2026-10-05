@@ -342,6 +342,7 @@ def cmd_iniciar(a):
         "preco": a.preco or "",
         "contexto": a.contexto or "",
         "vocabulario": [v.strip() for v in (a.vocabulario or "").split(",") if v.strip()],
+        "perfil": str(config.PASTA_PERFIL / "perfil.md") if (config.PASTA_PERFIL / "perfil.md").exists() else "",
         "criado": time.strftime("%Y-%m-%d %H:%M"),
     }
     escrever_json(s.briefing, briefing)
@@ -385,6 +386,7 @@ def cmd_motor(a):
     casa = Path(a.sessao).resolve().parent.parent
     if casa.name and (casa / "sessoes").is_dir():
         config.PASTA, config.ARQ_CONFIG, config.ARQ_ENV, config.PASTA_SESSOES = casa, casa / "config.json", casa / ".env", casa / "sessoes"
+        config.PASTA_PERFIL = casa / "perfil"
     from cop.motor import Motor
     from cop.sessao import Sessao
 
@@ -501,6 +503,24 @@ def cmd_abrir(a):
 # =====================================================================================
 # depois da reunião
 # =====================================================================================
+def cmd_perfil(a):
+    """Mostra onde fica o perfil e o que já existe (o Claude escreve os arquivos direto na pasta)."""
+    config.PASTA_PERFIL.mkdir(parents=True, exist_ok=True)
+    print(f"PERFIL={config.PASTA_PERFIL}")
+    arqs = sorted(config.PASTA_PERFIL.glob("*"))
+    if not arqs:
+        print("VAZIO: ainda não há perfil. Rode /reuniao-perfil.")
+        return 0
+    for p in arqs:
+        print(f"  {p.name} ({p.stat().st_size // 1024 + 1} KB)")
+    termos = config.termos_perfil()
+    if termos:
+        print("TERMOS=" + ", ".join(termos))
+    if a.mostrar and (config.PASTA_PERFIL / "perfil.md").exists():
+        print("\n" + (config.PASTA_PERFIL / "perfil.md").read_text(encoding="utf-8"))
+    return 0
+
+
 def cmd_transcricao(a):
     from cop.sessao import Sessao, ler_json
 
@@ -583,6 +603,9 @@ def main():
         x = sub.add_parser(nome)
         x.add_argument("--sessao")
         x.set_defaults(f=f)
+    x = sub.add_parser("perfil")
+    x.add_argument("--mostrar", action="store_true", help="imprime o perfil.md inteiro")
+    x.set_defaults(f=cmd_perfil)
     x = sub.add_parser("abrir")
     x.set_defaults(f=cmd_abrir)
     x = sub.add_parser("resumo")

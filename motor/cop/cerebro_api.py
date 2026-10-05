@@ -63,6 +63,16 @@ class CerebroAPI:
         self.rotulos = (cfg.get("rotulo_voce", "VOCÊ"), cfg.get("rotulo_cliente", "CLIENTE"))
         briefing = sessao.ler_briefing()
         modo = briefing.get("modo", "venda")
+        from . import config
+
+        perfil = config.ler_perfil()
+        bloco_perfil = (
+            "\n\n## PERFIL DE QUEM ESTÁ CONDUZINDO A CALL (ofertas, preços, cliente, objeções, script)\n"
+            "Use isto em todos os conselhos. Siga o script/etapas do usuário quando houver. Nunca invente condição fora daqui.\n\n"
+            + perfil
+            if perfil
+            else ""
+        )
         self.system = [
             {
                 "type": "text",
@@ -72,6 +82,7 @@ class CerebroAPI:
                     + _ler(PASTA_SKILL / "modos" / f"{modo}.md")
                     + "\n\n"
                     + _ler(PASTA_SKILL / "conselhos-formato.md")
+                    + bloco_perfil
                 ),
                 "cache_control": {"type": "ephemeral"},
             }

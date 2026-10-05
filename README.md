@@ -52,6 +52,7 @@ Trocar de caminho é uma linha: `copiloto config transcricao deepgram` (ou `loca
 ## Como usar
 
 ```
+/reuniao-perfil                                      ensina o copiloto sobre o seu negócio e o seu script (uma vez)
 /reuniao-teste                                       testa microfone e áudio do PC
 /reuniao venda Camila mentoria de 90 dias, R$ 4.900  liga o copiloto antes da call
 /reuniao mentoria João                               modo mentoria
@@ -79,7 +80,15 @@ O painel abre no navegador. O botão 📱 mostra um QR code para abrir **no celu
 - **Filtra as alucinações** do Whisper ("legendas pela comunidade Amara.org", "Quem? Quem? Quem?") e o eco de quem usa caixa de som.
 - **Gasta pouca memória:** o Whisper roda sem o Intel MKL. Com ele, o processo reservava mais de 2 GB e derrubava a transcrição com o navegador aberto. Sem ele, cai para ~300 MB, na mesma velocidade.
 
-O projeto nasceu de uma call real. Na primeira versão, a transcrição caiu por falta de memória, a voz do vendedor sumiu depois de trocar de fone e tudo parou com 2 horas. Esta versão foi reescrita para resolver exatamente esses três problemas.
+## Ele aprende o seu negócio
+
+Na instalação, o Claude faz uma entrevista rápida e guarda um **perfil** em `~/CopilotoReuniao/perfil/`, com:
+- o que você vende, para quem, preço, parcelamento e garantia;
+- o seu cliente ideal: dores, desejos e objeções comuns, com a resposta que funciona para você;
+- provas e diferenciais (cases, números, depoimentos);
+- o seu **script de vendas**, se você tiver: cole o texto ou indique o arquivo.
+
+Toda reunião usa esse perfil. Os conselhos citam os seus produtos e preços de verdade e seguem o seu roteiro. Para atualizar quando quiser: `/reuniao-perfil`.
 
 ## Privacidade (LGPD)
 

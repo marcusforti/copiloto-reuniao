@@ -29,6 +29,7 @@ Se você é o Claude Code e o usuário pediu para instalar este repositório, fa
 5. **Mac:** rode `bash "<pasta-do-plugin>/instalar/instalar-mac.sh"` e guie o usuário no passo do Multi-Output Device.
 6. Pergunte se o usuário quer o modo **grátis** (transcrição no PC) ou **pago** (Deepgram ou Soniox, com a chave dele). Veja `commands/reuniao-instalar.md` para os detalhes.
 7. Rode `python "<pasta-do-plugin>/motor/copiloto.py" teste --transcrever` com o usuário falando uma frase.
+7b. **Perfil do negócio:** siga `commands/reuniao-perfil.md`. Pergunte se a pessoa já tem script de vendas ou material escrito (colar o texto ou indicar o arquivo) e faça a entrevista curta sobre ofertas, preços, cliente, objeções e provas. Grave em `~/CopilotoReuniao/perfil/perfil.md` (modelo em `skills/copiloto-reuniao/perfil-modelo.md`).
 8. Explique ao usuário:
    - Reinicie o Claude Code para os comandos aparecerem.
    - Antes da call: `/reuniao venda NomeDoCliente o que você vende e por quanto`.

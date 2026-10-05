@@ -7,7 +7,7 @@ Ative a skill `copiloto-reuniao`. `COP` = `python "${CLAUDE_PLUGIN_ROOT}/motor/c
 
 1. Pare o Monitor da reunião, se estiver armado.
 2. Rode `COP parar` e depois `COP transcricao` (se o usuário passou uma pasta de sessão em `$ARGUMENTS`, acrescente `--sessao "<pasta>"` nos dois). Se já estiver parado, tudo bem. Leia o arquivo `TRANSCRICAO=` **inteiro** com a ferramenta Read e o `briefing.json` da mesma pasta.
-3. Escreva `<SESSAO>/resumo-dados.json` no formato da skill:
+3. Se ainda não estiver no contexto, rode `COP perfil --mostrar` para ter as ofertas, os preços e o tom do usuário. Escreva `<SESSAO>/resumo-dados.json` no formato da skill:
    - Seja específico. Use os números, nomes e frases do cliente.
    - Próximos passos com dono e prazo.
    - Objeções com status honesto.

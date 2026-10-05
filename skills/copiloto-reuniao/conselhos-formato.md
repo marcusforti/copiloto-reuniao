@@ -26,6 +26,7 @@ O painel lê `conselhos.json` na pasta da sessão. Sempre escreva o arquivo INTE
 - **`objecoes`**: as objeções que apareceram e a melhor resposta para cada uma. A mais recente primeiro.
 - **`evitar`**: 1 a 3 armadilhas para agora.
 - **`fase`**: uma das fases do modo (ver o arquivo do modo). Avance quando a conversa avançar; pode voltar.
+- **`fases`** (opcional): lista com as etapas do script do usuário, se ele tiver um (ex.: `["Conexão", "Diagnóstico", "Pitch", "Fechamento"]`). O painel mostra essas etapas no topo no lugar das fases padrão do modo; aí `fase` deve ser uma delas.
 - **Use os números e as palavras do cliente.** Conselho genérico não serve: "Pergunte sobre a dor" é ruim; "Pergunte quanto ela perde nas semanas fracas" é bom.
 - **Nunca invente fatos**: preço, prazo, garantia e condições só os que estão no briefing ou foram ditos na call. Se faltar, o conselho é perguntar ou dizer que confirma depois.
 - **Transcrição automática erra.** Se uma frase não fizer sentido, ignore ou interprete pelo contexto; não construa conselho em cima de uma palavra estranha.
