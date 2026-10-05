@@ -55,10 +55,25 @@ def colapsar_repeticoes(texto: str) -> str:
     return " ".join(palavras)
 
 
-def limpar(texto: str) -> str:
+def eco_do_prompt(texto: str, prompt: str) -> bool:
+    """Em silêncio o Whisper às vezes 'lê' o contexto inicial de volta ("EFATA, Diagnóstico de Autoridade, Reunião…").
+    Se todas as palavras da fala estão no prompt, é alucinação."""
+    if not prompt:
+        return False
+    pt, pp = _norm(texto).split(), set(_norm(prompt).split())
+    return bool(pt) and all(p in pp for p in pt)
+
+
+def limpar(texto: str, prompt: str = "") -> str:
     t = _RE_NAO_LATINO.sub("", texto or "").strip()
+    t = re.sub(r"(\w)\1{3,}", r"\1\1", t)  # "Ooooooooo", "Perqueeeeee" → corta a letra repetida
     t = re.sub(r"\s+", " ", t)
     t = colapsar_repeticoes(t)
+    if eco_do_prompt(t, prompt):
+        return ""
+    so_letras = re.sub(r"\W", "", t.lower())
+    if so_letras and len(set(so_letras)) <= 2 and len(so_letras) <= 6:  # "Ooo", "hmhm"
+        return ""
     if any(r.search(t) for r in _RE_ALUC) and len(t) < 90:
         return ""
     if len(re.sub(r"\W", "", t)) < 2:

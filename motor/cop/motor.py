@@ -47,7 +47,7 @@ class Motor:
 
     # ---------------- pipeline ----------------
     def _ao_texto(self, canal, texto, ts):
-        limpo = filtros.limpar(texto)
+        limpo = filtros.limpar(texto, getattr(self.stt, "prompt", ""))
         if limpo:
             self.eco.entrada(canal, limpo, ts)
 
@@ -87,14 +87,21 @@ class Motor:
         rodando = agora - self.inicio
         mx = self.mixer
         # microfone sem nenhum som (dispositivo errado ou mudo) — o problema que apagou a voz do vendedor em 02/10
+        # Ficar ouvindo em silêncio é normal numa call: só alerta depois de bastante tempo, e o limite é menor quando
+        # o canal NUNCA teve som (dispositivo errado desde o início). Antes de o cliente entrar não há alerta de cliente.
         if self.arquivos is None and rodando > 20:
-            if agora - mx.ultimo_som[VOCE] > 45 and agora - mx.ultimo_som[CLIENTE] < 60:
-                self.alerta("mic", "Não estou ouvindo VOCÊ há quase 1 minuto. Confira se o microfone certo está ativo (fone/headset) ou se você está no mudo.")
-            elif agora - mx.ultimo_som[VOCE] < 10:
+            som_voce, som_cliente = mx.ultimo_som[VOCE], mx.ultimo_som[CLIENTE]
+            cliente_ativo = som_cliente and agora - som_cliente < 60
+            voce_ativo = som_voce and agora - som_voce < 60
+            mic_mudo = (not som_voce and rodando > 60) or (som_voce and agora - som_voce > 180)
+            if mic_mudo and cliente_ativo:
+                self.alerta("mic", "Não estou ouvindo VOCÊ há alguns minutos. Confira se o microfone certo está ativo (fone/headset) ou se você está no mudo.")
+            elif som_voce and agora - som_voce < 10:
                 self.limpar_alerta("mic")
-            if agora - mx.ultimo_som[CLIENTE] > 90 and agora - mx.ultimo_som[VOCE] < 60:
+            cliente_mudo = (som_cliente and agora - som_cliente > 180) or (not som_cliente and rodando > 300)
+            if cliente_mudo and voce_ativo:
                 self.alerta("cliente", "Não estou ouvindo o CLIENTE. O áudio da reunião está saindo por um fone/caixa que eu não estou escutando?")
-            elif agora - mx.ultimo_som[CLIENTE] < 10:
+            elif som_cliente and agora - som_cliente < 10:
                 self.limpar_alerta("cliente")
         erro_audio = getattr(self.fonte, "erro", None)
         if erro_audio:

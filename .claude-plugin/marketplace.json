@@ -10,7 +10,7 @@
       "name": "copiloto-reuniao",
       "source": "./",
       "description": "Copiloto de reunião ao vivo para vendas e mentorias, em português.",
-      "version": "1.1.0"
+      "version": "1.1.1"
     }
   ]
 }

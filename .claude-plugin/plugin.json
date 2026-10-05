@@ -1,6 +1,6 @@
 {
   "name": "copiloto-reuniao",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Copiloto de reunião ao vivo para vendas e mentorias: transcreve a call em tempo real (grátis no PC ou por API) e mostra num painel o que falar agora, perguntas, objeções e sinais. No fim, resumo e follow-up.",
   "author": {
     "name": "Marcus Forti",

@@ -408,7 +408,7 @@ def cmd_acompanhar(a):
         cursor = int(s.cursor.read_text().strip())
     except Exception:
         cursor = 0
-    pendentes, ultimo_envio, alertas_vistos = [], 0.0, set()
+    pendentes, ultimo_envio, alertas_vistos = [], 0.0, {}
     gatilhos = ("caro", "pensar", "depois", "sócio", "socio", "esposa", "marido", "orçamento", "orcamento", "não sei", "nao sei", "concorrente", "desconto", "parcel", "garantia", "quanto custa", "preço", "preco", "valor")
     inicio = time.time()
     while True:
@@ -419,9 +419,10 @@ def cmd_acompanhar(a):
             pendentes += novas
             cursor = novas[-1]["id"]
         for al in e.get("alertas", []):
-            chave = (al.get("tipo"), al.get("msg"))
-            if chave not in alertas_vistos:
-                alertas_vistos.add(chave)
+            # o mesmo tipo de alerta só volta a ser avisado depois de 3 min (o de atraso muda o número a cada segundo)
+            tipo = al.get("tipo")
+            if time.time() - alertas_vistos.get(tipo, 0) > 180:
+                alertas_vistos[tipo] = time.time()
                 print(f"[COPILOTO ALERTA {time.strftime('%H:%M:%S')}] {al.get('msg')}", flush=True)
         agora = time.time()
         urgente = any(p["quem"] == "cliente" and (p["texto"].rstrip().endswith("?") or any(g in p["texto"].lower() for g in gatilhos)) for p in pendentes)
