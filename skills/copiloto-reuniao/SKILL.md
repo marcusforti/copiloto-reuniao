@@ -18,7 +18,7 @@ Pasta da sessão (o `iniciar` imprime `SESSAO=…`): `~/CopilotoReuniao/sessoes/
 - `resumo.html`: gerado no fim
 
 ## Durante a reunião (o loop)
-1. O `/reuniao` inicia o motor e arma o **Monitor** com `COP acompanhar --sessao "<SESSAO>"` (timeout de 30 min; **re-arme sempre que expirar** enquanto a reunião durar: o cursor fica salvo, nada se perde).
+1. O `/reuniao` inicia o motor e arma o **Monitor** com `COP acompanhar --sessao "<SESSAO>"` (timeout de 30 min; **re-arme sempre que expirar** enquanto a reunião durar: o cursor fica salvo, nada se perde). Não passe a saída por `grep` ou outro filtro: isso segura as linhas e os eventos chegam atrasados.
 2. Cada evento do Monitor traz as falas novas (`[COPILOTO hh:mm:ss] N fala(s) nova(s) | conselhos: <caminho>`).
 3. Para cada evento: **escreva o `conselhos.json` inteiro com a ferramenta Write**, seguindo `conselhos-formato.md` e o roteiro do modo (`modos/<modo>.md`). Faça só isso: é ao vivo, cada segundo conta. Não leia arquivos de novo a cada evento; você já tem o briefing e o contexto na conversa.
 4. No chat, no máximo uma linha curta por evento (ex.: `↻ Objeção de preço → conta do retorno`). O usuário está na reunião olhando o painel, não o terminal.

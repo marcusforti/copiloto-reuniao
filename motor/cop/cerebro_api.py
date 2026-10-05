@@ -102,9 +102,9 @@ class CerebroAPI:
         falas = self.sessao.ler_falas()
         if not falas or falas[-1]["id"] <= self.ultimo_id:
             return
-        self.ultimo_id = falas[-1]["id"]
+        novo_id = falas[-1]["id"]
         rotulo = {"voce": self.rotulos[0], "cliente": self.rotulos[1]}
-        recentes = falas[-160:]
+        recentes = sorted(falas[-160:], key=lambda f: f["ts"])
         transcricao = "\n".join(f"[{f['hora']}] {rotulo.get(f['quem'], f['quem'])}: {f['texto']}" for f in recentes)
         anterior = ler_json(self.sessao.conselhos, {}) or {}
         anterior.pop("historico", None)
@@ -119,6 +119,7 @@ class CerebroAPI:
         dados["atualizado"] = datetime.now().strftime("%H:%M")
         dados["cerebro"] = self.modelo
         escrever_json(self.sessao.conselhos, dados)
+        self.ultimo_id = novo_id  # só depois de gravar: se a chamada falhar, a mesma fala é tentada de novo
         self.logar(f"conselhos atualizados pela API em {time.time() - t:.1f}s")
 
     def _loop(self):

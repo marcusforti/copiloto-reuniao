@@ -67,17 +67,26 @@ def limpar(texto: str) -> str:
 
 
 def parecido(a: str, b: str) -> float:
-    return SequenceMatcher(None, _norm(a), _norm(b)).ratio()
+    """0..1. Considera também o caso de um texto estar CONTIDO no outro (o eco costuma vir cortado:
+    'Olha, eu gostei da proposta.' dentro de 'Olha, eu gostei da proposta, mas achei caro…')."""
+    pa, pb = _norm(a).split(), _norm(b).split()
+    if not pa or not pb:
+        return 0.0
+    m = SequenceMatcher(None, pa, pb, autojunk=False)
+    iguais = sum(bl.size for bl in m.get_matching_blocks())
+    contido = iguais / min(len(pa), len(pb)) if min(len(pa), len(pb)) >= 4 else 0.0
+    return max(m.ratio(), contido)
 
 
 class FiltroEco:
     """Sem fone, o microfone escuta o cliente pela caixa de som e a fala dele vira 'VOCÊ'.
-    Segura a fala do VOCÊ por alguns segundos e descarta se for quase igual a uma fala do CLIENTE no mesmo momento."""
+    Segura a fala do VOCÊ por alguns segundos e descarta se for quase igual a (ou estiver contida em) uma fala
+    do CLIENTE no mesmo momento. Fica sempre ligado: mais rígido com fone (raro ter eco), mais sensível sem fone."""
 
-    def __init__(self, emitir, ativo: bool, espera_s: float = 4.0, janela_s: float = 8.0, limiar: float = 0.6):
+    def __init__(self, emitir, ativo: bool = True, espera_s: float = 4.0, janela_s: float = 8.0, limiar: float = 0.6):
         self.emitir = emitir  # fn(canal, texto, ts)
         self.ativo = ativo
-        self.espera_s = espera_s
+        self.espera_s = espera_s if limiar < 0.8 else min(espera_s, 2.5)  # com fone o eco é raro: segura menos
         self.janela_s = janela_s
         self.limiar = limiar
         self.cliente = deque(maxlen=40)
@@ -104,9 +113,9 @@ class FiltroEco:
         with self.trava:
             while self.pendentes and agora - self.pendentes[0][0] >= self.espera_s:
                 _, canal, texto, ts = self.pendentes.popleft()
-                eco = any(
-                    abs(tc - ts) <= self.janela_s and parecido(texto, tx) >= self.limiar for tc, tx in self.cliente
-                )
+                # frase curta ("tá caro?") o vendedor pode repetir de propósito: só descarta se for praticamente igual
+                limiar = max(self.limiar, 0.95) if len(texto.split()) < 4 else self.limiar
+                eco = any(abs(tc - ts) <= self.janela_s and parecido(texto, tx) >= limiar for tc, tx in self.cliente)
                 if eco:
                     self.descartadas += 1
                 else:

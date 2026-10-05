@@ -52,7 +52,7 @@ class Segmentador:
                 if p > 0.5:
                     self.falando = True
                     self.seg = list(self.pre)
-                    self.t0 = t - len(self.pre) * self.janela / TAXA
+                    self.t0 = t - (len(self.pre) - 1) * self.janela / TAXA
                     self.n_fala, self.n_silencio = 1, 0
             else:
                 self.seg.append(j)

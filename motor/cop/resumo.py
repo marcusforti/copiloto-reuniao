@@ -38,7 +38,7 @@ def gerar(sessao, dados: dict) -> Path:
     briefing = sessao.ler_briefing()
     estado = ler_json(sessao.estado, {}) or {}
     rot = {"voce": "VOCÊ", "cliente": "CLIENTE", **(estado.get("rotulos") or {})}
-    falas = sessao.ler_falas()
+    falas = sorted(sessao.ler_falas(), key=lambda f: f["ts"])
     m = _metricas(falas, rot)
     cliente = briefing.get("cliente") or "Cliente"
     modo = briefing.get("modo", "venda")

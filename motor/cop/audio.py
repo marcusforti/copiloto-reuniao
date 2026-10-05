@@ -169,6 +169,7 @@ class FonteWindows:
         self.t = None
         self.dispositivos = {"microfone": None, "saidas": []}
         self.pronto = threading.Event()
+        self.erro = None
 
     # ---- nomes dos dispositivos padrão (papel "comunicação", o que apps de reunião usam) ----
     def _padrao(self, fluxo: int, papel: int = 2):
@@ -297,8 +298,7 @@ class FonteWindows:
             comtypes.CoInitialize()
         except Exception:
             pass
-        self._abrir_tudo()
-        self.pronto.set()
+        self._abrir_com_retentativa()
         mic_parado_desde = None
         while not self.parar.wait(2.0):
             try:
@@ -313,11 +313,24 @@ class FonteWindows:
                     self.logar(f"reconectando: {motivo}")
                     self._fechar_tudo()
                     time.sleep(0.8)
-                    self._abrir_tudo()
+                    self._abrir_com_retentativa()
                     mic_parado_desde = None
             except Exception as e:
                 self.logar(f"erro no vigia de áudio: {e}")
         self._fechar_tudo()
+
+    def _abrir_com_retentativa(self):
+        while not self.parar.is_set():
+            try:
+                self._abrir_tudo()
+                self.erro = None if self.mic else "Não consegui abrir nenhum microfone."
+                break
+            except Exception as e:
+                self.erro = f"Não consegui abrir o áudio ({e}). Tentando de novo…"
+                self.logar(self.erro)
+                self._fechar_tudo()
+                self.parar.wait(3)
+        self.pronto.set()
 
     def iniciar(self):
         self.t = threading.Thread(target=self._vigiar, name="audio-win", daemon=True)
@@ -342,6 +355,7 @@ class FonteMac:
         self.parar = threading.Event()
         self.dispositivos = {"microfone": None, "saidas": []}
         self.pronto = threading.Event()
+        self.erro = None
 
     def _abrir(self, idx, canal, chave):
         info = self.sd.query_devices(idx)
@@ -393,9 +407,21 @@ class FonteMac:
         for chave in list(self.mixer.buf):
             self.mixer.remover(chave)
 
-    def _vigiar(self):
-        self._abrir_tudo()
+    def _abrir_com_retentativa(self):
+        while not self.parar.is_set():
+            try:
+                self._abrir_tudo()
+                self.erro = None if self.dispositivos.get("microfone") else "Não consegui abrir o microfone."
+                break
+            except Exception as e:  # ex.: permissão de microfone negada nos Ajustes do Mac
+                self.erro = f"Não consegui abrir o áudio ({e}). Confira em Ajustes > Privacidade > Microfone se o Terminal tem permissão."
+                self.logar(self.erro)
+                self._fechar_tudo()
+                self.parar.wait(3)
         self.pronto.set()
+
+    def _vigiar(self):
+        self._abrir_com_retentativa()
         while not self.parar.wait(2.0):
             if time.monotonic() - self.mixer.ultimo_pacote.get("mic", 0) > 4:
                 self.logar("reconectando: microfone parou de mandar som")
@@ -406,7 +432,7 @@ class FonteMac:
                     self.sd._initialize()
                 except Exception:
                     pass
-                self._abrir_tudo()
+                self._abrir_com_retentativa()
         self._fechar_tudo()
 
     def iniciar(self):

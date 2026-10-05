@@ -318,7 +318,9 @@
 
   let falas = [];
   function renderFalas(novas, completo) {
-    if (completo) falas = novas; else falas = falas.concat(novas);
+    if (completo) falas = novas;
+    else { const ids = new Set(falas.map(f => f.id)); falas = falas.concat(novas.filter(f => !ids.has(f.id))); }
+    falas.sort((a, b) => a.ts - b.ts);  // a fala do VOCÊ é gravada um pouco depois (filtro de eco): ordena pela hora real
     if (falas.length > 400) falas = falas.slice(-400);
     const el = $("trans"), noFim = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
     $("nTrans").textContent = falas.length ? `(${falas.length})` : "";
@@ -361,7 +363,7 @@
       if (d.estado && d.estado.inicio && d.estado.inicio !== sessaoId) { sessaoId = d.estado.inicio; desde = 0; falas = []; vistos = []; }
       renderEstado(d.estado || {});
       renderConselhos(d.conselhos || {}, d.briefing || {}, d.historico || []);
-      if (d.falas && d.falas.length) { renderFalas(d.falas, desde === 0); desde = d.falas[d.falas.length - 1].id; }
+      if (d.falas && d.falas.length) { renderFalas(d.falas, desde === 0); desde = Math.max(desde, d.falas[d.falas.length - 1].id); }
       else if (desde === 0) renderFalas([], true);
       urlCelular = d.celular || urlCelular;
       $("btnCelular").style.display = urlCelular ? "" : "none";
@@ -403,8 +405,9 @@
   $("okAviso").onclick = () => { $("faixaAviso").classList.remove("aviso"); gravar("avisoTela", true); };
 
   setInterval(() => { $("relogio").textContent = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); }, 1000);
-  setInterval(atualizar, 700);
-  atualizar(); renderHist();
+  // uma atualização por vez: numa conexão lenta (celular) respostas fora de ordem duplicariam falas
+  async function laco() { await atualizar(); setTimeout(laco, 700); }
+  laco(); renderHist();
 </script>
 </body>
 </html>

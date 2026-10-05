@@ -262,17 +262,34 @@ def cmd_chave(a):
 # sessão: iniciar / motor / acompanhar / status / parar
 # =====================================================================================
 def _spawn_destacado(args: list, log: Path):
-    """Processo independente: sobrevive ao fim do comando e ao limite de tarefas em segundo plano do Claude Code."""
-    err = open(log, "a", encoding="utf-8")
+    """Processo independente: sobrevive ao fim do comando e ao limite de tarefas em segundo plano do Claude Code.
+
+    No Windows, o Claude Code pode rodar os comandos dentro de um "Job Object" que mata os filhos quando a tarefa
+    termina. Primeiro tentamos sair do job (CREATE_BREAKAWAY_FROM_JOB). Se o job não permitir, criamos o processo
+    pelo WMI: quem vira "pai" é o serviço do Windows, fora de qualquer job."""
     if os.name == "nt":
-        DETACHED, NOVO_GRUPO, SEM_JANELA, FUGIR_DO_JOB = 0x8, 0x200, 0x08000000, 0x01000000
-        for flags in (DETACHED | NOVO_GRUPO | FUGIR_DO_JOB, DETACHED | NOVO_GRUPO, SEM_JANELA | NOVO_GRUPO):
-            try:
-                return subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=err, stderr=err, creationflags=flags, close_fds=True)
-            except OSError:
-                continue
-        raise RuntimeError("não consegui iniciar o motor")
-    return subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=err, stderr=err, start_new_session=True, close_fds=True)
+        DETACHED, NOVO_GRUPO, FUGIR_DO_JOB = 0x8, 0x200, 0x01000000
+        try:
+            with open(log, "a", encoding="utf-8") as err:
+                return subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=err, stderr=err, creationflags=DETACHED | NOVO_GRUPO | FUGIR_DO_JOB, close_fds=True)
+        except OSError:
+            pass
+        linha = subprocess.list2cmdline(args)
+        ps = (
+            "$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create "
+            f"-Arguments @{{CommandLine={_ps_str(linha)}; CurrentDirectory={_ps_str(str(AQUI))}}}; "
+            "if ($r.ReturnValue -ne 0) { exit 1 } else { $r.ProcessId }"
+        )
+        r = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True)
+        if r.returncode != 0:
+            raise RuntimeError(f"não consegui iniciar o motor: {r.stderr.strip()[:300]}")
+        return None
+    with open(log, "a", encoding="utf-8") as err:
+        return subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=err, stderr=err, start_new_session=True, close_fds=True)
+
+
+def _ps_str(s: str) -> str:
+    return "'" + s.replace("'", "''") + "'"
 
 
 def _pid_vivo(pid) -> bool:
@@ -342,8 +359,13 @@ def cmd_iniciar(a):
         log = (s.pasta / "motor_saida.log").read_text(encoding="utf-8", errors="replace")[-1500:] if (s.pasta / "motor_saida.log").exists() else ""
         print(f"ERRO: o motor não subiu. status={e.get('status')} erro={e.get('erro')}\n{log}")
         return 2
+    fim = time.time() + 10  # espera os dispositivos de áudio abrirem para mostrar quais estão sendo ouvidos
+    while time.time() < fim and not (e.get("dispositivos") or {}).get("microfone"):
+        time.sleep(0.5)
+        e = ler_json(s.estado, {}) or e
     urls = e.get("painel", {})
-    if cfg.get("abrir_painel", True) and not a.sem_painel:
+    abriu = bool(cfg.get("abrir_painel", True) and not a.sem_painel)
+    if abriu:
         webbrowser.open(urls.get("pc", ""))
     print(f"SESSAO={s.pasta}")
     print(f"PAINEL={urls.get('pc')}")
@@ -352,12 +374,17 @@ def cmd_iniciar(a):
     print(f"MICROFONE={e.get('dispositivos', {}).get('microfone')}")
     print(f"SAIDAS={', '.join(e.get('dispositivos', {}).get('saidas') or [])}")
     print(f"CONSELHOS={s.conselhos}")
-    print("\nO copiloto está ouvindo. Painel aberto no navegador.")
+    print("\nO copiloto está ouvindo." + (" Painel aberto no navegador." if abriu else f" Painel: {urls.get('pc')}"))
     print("⚠ Se for compartilhar tela, compartilhe SÓ a aba/janela da apresentação, nunca a tela inteira (o cliente veria o painel).")
     return 0
 
 
 def cmd_motor(a):
+    # a pasta do copiloto vem do caminho da sessão (<pasta>/sessoes/<sessão>): o motor pode ter sido criado pelo
+    # WMI no Windows, sem herdar as variáveis de ambiente de quem chamou
+    casa = Path(a.sessao).resolve().parent.parent
+    if casa.name and (casa / "sessoes").is_dir():
+        config.PASTA, config.ARQ_CONFIG, config.ARQ_ENV, config.PASTA_SESSOES = casa, casa / "config.json", casa / ".env", casa / "sessoes"
     from cop.motor import Motor
     from cop.sessao import Sessao
 
@@ -398,6 +425,7 @@ def cmd_acompanhar(a):
         urgente = any(p["quem"] == "cliente" and (p["texto"].rstrip().endswith("?") or any(g in p["texto"].lower() for g in gatilhos)) for p in pendentes)
         if pendentes and (agora - ultimo_envio >= a.intervalo or (urgente and agora - ultimo_envio >= 6) or len(pendentes) >= 14):
             linhas = [f"[COPILOTO {time.strftime('%H:%M:%S')}] {len(pendentes)} fala(s) nova(s){' — CLIENTE perguntou/objetou' if urgente else ''} | conselhos: {s.conselhos}"]
+            pendentes.sort(key=lambda p: p["ts"])
             linhas += [f"  {p['hora']} {rot.get(p['quem'], p['quem'])}: {p['texto']}" for p in pendentes]
             print("\n".join(linhas), flush=True)
             s.cursor.write_text(str(cursor))
@@ -479,7 +507,7 @@ def cmd_transcricao(a):
     s = Sessao.abrir(a.sessao)
     e = ler_json(s.estado, {}) or {}
     rot = {"voce": "VOCÊ", "cliente": "CLIENTE", **(e.get("rotulos") or {})}
-    falas = s.ler_falas()
+    falas = sorted(s.ler_falas(), key=lambda f: f["ts"])
     txt = "\n".join(f"[{f['hora']}] {rot.get(f['quem'], f['quem'])}: {f['texto']}" for f in falas)
     destino = s.pasta / "transcricao.txt"
     destino.write_text(txt + "\n", encoding="utf-8")

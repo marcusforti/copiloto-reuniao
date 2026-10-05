@@ -146,6 +146,7 @@ class TranscritorLocal:
                 canal, audio, ts = self._proximo()
             except queue.Empty:
                 continue
+            self.ocupado = True
             dur = len(audio) / 16000
             texto, tentativas = None, 0
             while texto is None and tentativas < 3:
@@ -170,17 +171,26 @@ class TranscritorLocal:
             with self.trava:
                 self.segundos_na_fila = max(0.0, self.segundos_na_fila - dur) if not self.fila.empty() else 0.0
             self.processados += 1
-            if texto:
-                self.ao_texto(canal, texto, ts)
+            try:
+                if texto:
+                    self.ao_texto(canal, texto, ts)
+            finally:
+                self.ocupado = False
 
     def iniciar(self):
-        threading.Thread(target=self._trabalhar, name="whisper", daemon=True).start()
+        self.ocupado = False
+        self.t = threading.Thread(target=self._trabalhar, name="whisper", daemon=True)
+        self.t.start()
 
     def encerrar(self, esperar_s: float = 0):
+        """Espera a fila E o trecho que está sendo transcrito agora (a última fala da reunião não pode se perder)."""
         fim = time.time() + esperar_s
-        while esperar_s and not self.fila.empty() and time.time() < fim:
-            time.sleep(0.3)
+        while esperar_s and (not self.fila.empty() or getattr(self, "ocupado", False)) and time.time() < fim:
+            time.sleep(0.2)
         self.parar.set()
+        t = getattr(self, "t", None)
+        if t and t.is_alive():
+            t.join(timeout=max(0.5, fim - time.time()))
 
     def info(self) -> dict:
         rtf = self.tempo_proc / self.audio_proc if self.audio_proc else None

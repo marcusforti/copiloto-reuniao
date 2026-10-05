@@ -2,6 +2,6 @@ numpy>=1.26
 faster-whisper>=1.1
 silero-vad-lite>=0.2
 soxr>=0.5
-websockets>=13
+websockets>=14
 psutil>=5.9
 sounddevice>=0.4.6

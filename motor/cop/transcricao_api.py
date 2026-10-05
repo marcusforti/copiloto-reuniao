@@ -8,6 +8,7 @@ Cada canal (VOCÊ e CLIENTE) abre um WebSocket próprio. O relógio do Mixer man
 """
 import asyncio
 import json
+import os
 import threading
 import time
 from urllib.parse import urlencode
@@ -39,6 +40,8 @@ class TranscritorAPI:
         self.loop = None
         self.filas = {}
         self.parar = threading.Event()
+        self.fechando = threading.Event()
+        self.t = None
         self.conectado = {"voce": False, "cliente": False}
         self.ultimo_final = 0.0
 
@@ -77,7 +80,7 @@ class TranscritorAPI:
             ("smart_format", "true"),
             ("punctuate", "true"),
         ] + [("keyterm", t) for t in self.termos]
-        url = "wss://api.deepgram.com/v1/listen?" + urlencode(params)
+        url = os.environ.get("COPILOTO_URL_DEEPGRAM", "wss://api.deepgram.com/v1/listen") + "?" + urlencode(params)
         async with websockets.connect(url, additional_headers={"Authorization": f"Token {self.chave}"}, max_size=None) as ws:
             self.conectado[canal] = True
             self.logar(f"deepgram conectado ({canal})")
@@ -86,13 +89,15 @@ class TranscritorAPI:
             async def enviar():
                 q = self.filas[canal]
                 while not self.parar.is_set():
+                    if self.fechando.is_set() and q.empty():
+                        break
                     try:
                         dados, ts = await asyncio.wait_for(q.get(), timeout=1.0)
                     except asyncio.TimeoutError:
                         await ws.send(json.dumps({"type": "KeepAlive"}))
                         continue
                     await ws.send(dados)
-                await ws.send(json.dumps({"type": "CloseStream"}))
+                await ws.send(json.dumps({"type": "CloseStream"}))  # o servidor devolve o que falta e fecha
 
             async def receber():
                 nonlocal partes, t0
@@ -114,11 +119,14 @@ class TranscritorAPI:
                         partes, t0 = [], None
                     elif tipo == "Error" or msg.get("err_code"):
                         raise RuntimeError(str(msg)[:300])
+                if partes:  # conexão fechou com texto final ainda não emitido
+                    self._emitir(canal, " ".join(partes), t0)
+                    partes, t0 = [], None
 
             await asyncio.gather(enviar(), receber())
 
     async def _soniox(self, canal):
-        url = "wss://stt-rt.soniox.com/transcribe-websocket"
+        url = os.environ.get("COPILOTO_URL_SONIOX", "wss://stt-rt.soniox.com/transcribe-websocket")
         config = {
             "api_key": self.chave,
             "model": "stt-rt-v5",
@@ -138,12 +146,14 @@ class TranscritorAPI:
             async def enviar():
                 q = self.filas[canal]
                 while not self.parar.is_set():
+                    if self.fechando.is_set() and q.empty():
+                        break
                     try:
                         dados, ts = await asyncio.wait_for(q.get(), timeout=1.0)
                     except asyncio.TimeoutError:
                         dados = b"\x00\x00" * 1600  # 100 ms de silêncio mantém a conexão
                     await ws.send(dados)
-                await ws.send("")
+                await ws.send("")  # frame vazio = fim do áudio; o servidor responde com finished
 
             async def receber():
                 nonlocal buf, t0
@@ -163,7 +173,10 @@ class TranscritorAPI:
                                 t0 = time.time()
                             buf.append(tok["text"])
                     if res.get("finished"):
-                        return
+                        break
+                if "".join(buf).strip():  # descarrega o texto final que ficou sem marcador de fim
+                    self._emitir(canal, "".join(buf).strip(), t0)
+                    buf, t0 = [], None
 
             await asyncio.gather(enviar(), receber())
 
@@ -180,6 +193,8 @@ class TranscritorAPI:
                 else:
                     await self._soniox(canal)
                 espera = 1
+                if self.fechando.is_set():
+                    break
             except Exception as e:
                 self.conectado[canal] = False
                 msg = str(e)
@@ -192,7 +207,7 @@ class TranscritorAPI:
                     espera = 60
                 else:
                     self.alerta("api", f"Conexão com a {self.provedor} caiu. Reconectando…", temporario=True)
-                if self.parar.is_set():
+                if self.parar.is_set() or self.fechando.is_set():
                     break
                 await asyncio.sleep(espera)
                 espera = min(espera * 2, 20)
@@ -204,10 +219,14 @@ class TranscritorAPI:
         self.loop.run_until_complete(asyncio.gather(self._canal("voce"), self._canal("cliente")))
 
     def iniciar(self):
-        threading.Thread(target=self._rodar, name="stt-api", daemon=True).start()
+        self.t = threading.Thread(target=self._rodar, name="stt-api", daemon=True)
+        self.t.start()
 
     def encerrar(self, esperar_s: float = 0):
-        time.sleep(min(esperar_s, 3))
+        """Para de aceitar áudio, manda o que falta, avisa o provedor do fim e espera as últimas transcrições."""
+        self.fechando.set()
+        if self.t and self.t.is_alive():
+            self.t.join(timeout=min(max(esperar_s, 2), 15))
         self.parar.set()
 
     def info(self) -> dict:

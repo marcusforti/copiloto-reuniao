@@ -96,6 +96,7 @@ O projeto nasceu de uma call real. Na primeira versão, a transcrição caiu por
 | "Não estou ouvindo o CLIENTE" | No Mac: falta o BlackHole + Multi-Output (`instalar/instalar-mac.sh`). No Windows: confira se o som da reunião está saindo pelo PC. |
 | Atraso grande | Feche abas pesadas, ou use o modo pago. |
 | Painel não abre no celular | Celular e PC precisam estar na mesma Wi-Fi. Permita o Python no firewall do Windows quando ele perguntar. |
+| Mac: trocou de microfone no meio da call | No Windows a troca é automática. No Mac, rode `/reuniao` de novo depois de trocar de fone ou microfone. |
 
 ## Testar sem reunião
 

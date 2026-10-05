@@ -33,7 +33,7 @@ class Motor:
         for k in ("cliente", "empresa", "oferta"):
             if briefing.get(k):
                 self.vocabulario.append(briefing[k])
-        self.eco = filtros.FiltroEco(self._gravar, ativo=not self.cfg.get("fone", True))
+        self.eco = filtros.FiltroEco(self._gravar, ativo=True, limiar=0.8 if self.cfg.get("fone", True) else 0.6)
 
     # ---------------- alertas ----------------
     def alerta(self, tipo: str, msg: str, temporario: bool = False):
@@ -96,6 +96,11 @@ class Motor:
                 self.alerta("cliente", "Não estou ouvindo o CLIENTE. O áudio da reunião está saindo por um fone/caixa que eu não estou escutando?")
             elif agora - mx.ultimo_som[CLIENTE] < 10:
                 self.limpar_alerta("cliente")
+        erro_audio = getattr(self.fonte, "erro", None)
+        if erro_audio:
+            self.alerta("audio", erro_audio)
+        else:
+            self.limpar_alerta("audio")
         livre = sistema.ram_livre_gb()
         if livre < 0.6:
             self.alerta("memoria", f"Memória do PC quase no fim ({livre:.1f} GB livres). Feche abas e programas.")

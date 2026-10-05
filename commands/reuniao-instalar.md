@@ -17,9 +17,11 @@ description: Instala e configura o Copiloto de Reunião (modo grátis no PC ou m
 3. Rode `COP instalar` (com `--api` se escolheu o cérebro por API). Na primeira vez leva alguns minutos (bibliotecas + modelo de transcrição).
 
 4. Configure:
-   - **Pago:** `COP config transcricao deepgram` (ou `soniox`) e `COP chave deepgram <CHAVE>`. **Nunca** repita a chave no chat depois de salvar.
+   - **Pago com Deepgram:** `COP config transcricao deepgram` e `COP chave deepgram <CHAVE>`.
+   - **Pago com Soniox:** `COP config transcricao soniox` e `COP chave soniox <CHAVE>`.
+   - **Nunca** repita a chave no chat depois de salvar.
    - **Cérebro por API:** `COP config cerebro api` e `COP chave anthropic <CHAVE>`.
-   - **Sem fone de ouvido:** `COP config fone false`. Isso liga o filtro de eco.
+   - **Sem fone de ouvido:** `COP config fone false`. Deixa o filtro de eco mais sensível (o microfone escuta a caixa de som).
    - **Nomes nos rótulos (opcional):** `COP config rotulo_voce "MARCUS"`.
 
 5. **Mac:** rode `bash "${CLAUDE_PLUGIN_ROOT}/instalar/instalar-mac.sh"` para instalar o BlackHole e siga as instruções que ele mostrar (Multi-Output Device).
