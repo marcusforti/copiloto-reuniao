@@ -1,0 +1,9 @@
+numpy>=1.26
+faster-whisper>=1.1
+silero-vad-lite>=0.2
+soxr>=0.5
+websockets>=13
+psutil>=5.9
+PyAudioWPatch>=0.2.12.8; sys_platform == "win32"
+pycaw>=20240316; sys_platform == "win32"
+comtypes>=1.4.8; sys_platform == "win32"

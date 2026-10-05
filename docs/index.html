@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copiloto de Reunião</title>
+<meta name="description" content="Um assistente que escuta sua call de venda ou mentoria e mostra, ao vivo, o que falar agora. Grátis, em português, roda no Claude Code.">
+<meta property="og:title" content="Copiloto de Reunião: saiba o que responder na hora do “tá caro”">
+<meta property="og:description" content="Escuta a call, transcreve ao vivo e mostra o que falar agora. Grátis, open source, em português.">
+<meta property="og:image" content="https://marcusforti.github.io/copiloto-reuniao/img/og.png">
+<meta name="theme-color" content="#0b0d12">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0d12; --bg2: #0f1218; --panel: #12151c; --panel2: #171b24; --line: #232836;
+    --txt: #eef1f6; --soft: #b6bdca; --mute: #7d8698;
+    --ouro: #f6c544; --ouro-bg: rgba(246,197,68,.09); --voce: #39d98a; --cliente: #5ea8ff; --alerta: #ff6b6b;
+    --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --texto: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; } }
+  body { margin: 0; background: var(--bg); color: var(--txt); font: 18px/1.6 var(--texto); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--ouro); outline-offset: 3px; border-radius: 6px; }
+  .wrap { width: min(1160px, 100% - 32px); margin-inline: auto; }
+  h1, h2, h3 { font-family: var(--display); letter-spacing: -.02em; line-height: 1.08; margin: 0; }
+  h2 { font-size: clamp(30px, 4.2vw, 48px); font-weight: 800; max-width: 22ch; }
+  p { margin: 0; }
+  .lead { color: var(--soft); max-width: 60ch; }
+
+  /* topo */
+  .barra { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; }
+  .marca { display: flex; gap: 10px; align-items: center; font-family: var(--display); font-weight: 700; font-size: 18px; text-decoration: none; }
+  .marca svg { width: 26px; height: 26px; }
+  .barra nav { display: flex; gap: 22px; font-size: 15px; color: var(--soft); }
+  .barra nav a { text-decoration: none; }
+  .barra nav a:hover { color: var(--txt); }
+  @media (max-width: 720px) { .barra nav a:not(.gh) { display: none; } }
+
+  /* hero */
+  .hero { display: grid; grid-template-columns: 1.08fr 1fr; gap: 48px; align-items: center; padding: 40px 0 96px; }
+  .hero h1 { font-size: clamp(40px, 5.4vw, 68px); font-weight: 800; }
+  .hero .lead { margin-top: 22px; font-size: 20px; }
+  .ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; border-radius: 12px; padding: 14px 18px; font: 700 16px/1 var(--texto); text-decoration: none; cursor: pointer; border: 1px solid transparent; transition: transform .12s, background .12s; }
+  .btn:active { transform: translateY(1px); }
+  .btn.ouro { background: var(--ouro); color: #14110a; }
+  .btn.ouro:hover { background: #ffd35e; }
+  .btn.contorno { border-color: var(--line); color: var(--txt); background: var(--panel); }
+  .btn.contorno:hover { border-color: var(--soft); }
+  .btn svg { width: 18px; height: 18px; flex: none; }
+  .nota { margin-top: 18px; font-size: 14.5px; color: var(--mute); }
+  @media (max-width: 960px) { .hero { grid-template-columns: 1fr; gap: 40px; padding-bottom: 72px; } }
+
+  /* painel ao vivo (demo) */
+  .demo { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; box-shadow: 0 30px 80px -30px rgba(0,0,0,.8); font-family: "Segoe UI", system-ui, sans-serif; }
+  .demo-topo { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 11.5px; font-weight: 800; letter-spacing: .07em; color: var(--mute); }
+  .aovivo { display: flex; align-items: center; gap: 7px; color: var(--txt); }
+  .aovivo i { width: 8px; height: 8px; border-radius: 50%; background: var(--alerta); animation: ping 1.6s infinite; }
+  @keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(255,107,107,.6); } 70%, 100% { box-shadow: 0 0 0 7px rgba(255,107,107,0); } }
+  .meds { margin-left: auto; display: flex; gap: 12px; }
+  .med { display: flex; align-items: center; gap: 6px; }
+  .med b { width: 46px; height: 7px; border-radius: 5px; background: var(--line); overflow: hidden; display: block; }
+  .med b span { display: block; height: 100%; width: 5%; border-radius: 5px; transition: width .12s linear; }
+  .med.v b span { background: var(--voce); } .med.c b span { background: var(--cliente); }
+  .demo-corpo { padding: 16px; display: grid; gap: 14px; }
+  .fale { border: 1px solid rgba(246,197,68,.45); background: linear-gradient(180deg, var(--ouro-bg), transparent 75%), var(--panel2); border-radius: 14px; padding: 14px 16px; min-height: 148px; }
+  .fale.novo { animation: brilho 2.2s ease-out; }
+  @keyframes brilho { 0% { box-shadow: 0 0 0 0 rgba(246,197,68,.7); } 100% { box-shadow: 0 0 0 18px rgba(246,197,68,0); } }
+  .fale small { font-size: 11px; font-weight: 800; letter-spacing: .12em; color: var(--ouro); }
+  .fale p { font-size: clamp(17px, 1.7vw, 21px); line-height: 1.35; font-weight: 650; margin-top: 6px; }
+  .fale .pq { margin-top: 8px; font-size: 13.5px; font-weight: 400; color: var(--soft); line-height: 1.45; }
+  .falas { display: grid; gap: 8px; min-height: 176px; align-content: end; }
+  .fala { font-size: 14px; line-height: 1.45; color: var(--soft); padding: 8px 10px; border-radius: 10px; background: var(--bg2); border-left: 3px solid var(--line); animation: entra .35s ease-out; }
+  .fala.voce { border-left-color: var(--voce); } .fala.cliente { border-left-color: var(--cliente); }
+  .fala b { font-size: 10.5px; letter-spacing: .07em; margin-right: 6px; }
+  .fala.voce b { color: var(--voce); } .fala.cliente b { color: var(--cliente); }
+  @keyframes entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .sinais { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; }
+  .sinal { font-size: 12px; padding: 4px 9px; border-radius: 7px; background: var(--panel2); border: 1px solid var(--line); color: var(--soft); animation: entra .35s ease-out; }
+  .sinal em { font-style: normal; font-weight: 800; color: var(--cliente); margin-right: 4px; }
+  .sinal.dor em { color: var(--alerta); } .sinal.num em { color: var(--ouro); } .sinal.sim em { color: var(--voce); }
+
+  /* seções */
+  section.bloco { padding: 96px 0; border-top: 1px solid var(--line); }
+  .bloco .lead { margin-top: 18px; }
+
+  /* o que aparece */
+  .tela { margin-top: 44px; display: grid; grid-template-columns: 1.5fr 1fr; gap: 40px; align-items: start; }
+  .tela figure { margin: 0; }
+  .tela img { width: 100%; height: auto; display: block; border-radius: 16px; border: 1px solid var(--line); }
+  .tela figcaption { font-size: 14px; color: var(--mute); margin-top: 10px; }
+  .partes { display: grid; gap: 22px; }
+  .parte h3 { font-size: 21px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+  .parte h3 i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .parte p { color: var(--soft); margin-top: 6px; font-size: 16.5px; }
+  .parte a { color: var(--ouro); text-underline-offset: 3px; }
+  @media (max-width: 960px) { .tela { grid-template-columns: 1fr; } }
+
+  /* instalar */
+  .passos { margin-top: 44px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; counter-reset: passo; }
+  .passo { counter-increment: passo; }
+  .passo::before { content: counter(passo); display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--ouro); color: var(--ouro); font: 800 18px/1 var(--display); margin-bottom: 16px; }
+  .passo h3 { font-size: 22px; font-weight: 700; }
+  .passo p { color: var(--soft); margin-top: 8px; font-size: 16.5px; }
+  .passo code, .cmd code { font: 14.5px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace; }
+  .passo p code { color: var(--txt); background: var(--panel2); padding: 2px 7px; border-radius: 6px; }
+  .copiar { margin-top: 44px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .copiar-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); color: var(--soft); font-size: 15px; }
+  .copiar pre { margin: 0; padding: 18px 20px; white-space: pre-wrap; word-break: break-word; font: 15.5px/1.6 ui-monospace, "Cascadia Code", Consolas, monospace; color: var(--txt); }
+  .btn.mini { padding: 9px 14px; font-size: 14px; border-radius: 10px; }
+  @media (max-width: 860px) { .passos { grid-template-columns: 1fr; } }
+
+  /* gratis x pago */
+  .planos { margin-top: 44px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .plano { border: 1px solid var(--line); border-radius: 18px; padding: 28px; background: var(--panel); }
+  .plano.gratis { border-color: rgba(57,217,138,.4); }
+  .plano h3 { font-size: 28px; font-weight: 800; }
+  .plano .preco { font-family: var(--display); font-size: 18px; color: var(--soft); margin-top: 6px; }
+  .plano ul { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 10px; }
+  .plano li { padding-left: 26px; position: relative; color: var(--soft); font-size: 16.5px; }
+  .plano li::before { content: ""; position: absolute; left: 0; top: .55em; width: 12px; height: 7px; border-left: 2px solid var(--voce); border-bottom: 2px solid var(--voce); transform: rotate(-45deg); }
+  .plano.pago li::before { border-color: var(--cliente); }
+  .plano .quem { margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--line); font-size: 15px; color: var(--mute); }
+  @media (max-width: 860px) { .planos { grid-template-columns: 1fr; } }
+
+  /* história */
+  .historia { margin-top: 44px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .falha { border-radius: 18px; background: var(--panel); border: 1px solid var(--line); padding: 24px; }
+  .falha .antes { color: var(--alerta); font-weight: 700; font-size: 15px; }
+  .falha h3 { font-size: 22px; font-weight: 700; margin-top: 8px; }
+  .falha p { color: var(--soft); margin-top: 10px; font-size: 16px; }
+  .falha .agora { margin-top: 14px; color: var(--voce); font-weight: 700; font-size: 15px; }
+  @media (max-width: 960px) { .historia { grid-template-columns: 1fr; } }
+
+  /* perguntas */
+  .faq { margin-top: 36px; max-width: 820px; }
+  .faq details { border-bottom: 1px solid var(--line); }
+  .faq summary { cursor: pointer; list-style: none; padding: 20px 36px 20px 0; position: relative; font: 700 19px/1.35 var(--display); }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; position: absolute; right: 4px; top: 16px; font-size: 26px; color: var(--ouro); transition: transform .15s; }
+  .faq details[open] summary::after { transform: rotate(45deg); }
+  .faq details p { color: var(--soft); padding: 0 0 20px; max-width: 70ch; }
+
+  /* final */
+  .final { padding: 110px 0 120px; border-top: 1px solid var(--line); text-align: center; }
+  .final h2 { margin-inline: auto; max-width: 18ch; }
+  .final .lead { margin: 18px auto 0; }
+  .final .ctas { justify-content: center; }
+  footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--mute); font-size: 14.5px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; }
+
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; background: var(--voce); color: #06140c; font-weight: 700; padding: 10px 18px; border-radius: 10px; transition: .2s; pointer-events: none; z-index: 9; }
+  .toast.on { opacity: 1; transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+
+<header class="wrap barra">
+  <a class="marca" href="#">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="7" width="26" height="18" rx="5" fill="none" stroke="#f6c544" stroke-width="2.4"/><path d="M9 19v-6M13 21V11M17 18v-4M21 20v-8M25 17v-2" stroke="#eef1f6" stroke-width="2.2" stroke-linecap="round"/></svg>
+    Copiloto de Reunião
+  </a>
+  <nav>
+    <a href="#como">Como funciona</a>
+    <a href="#instalar">Instalar</a>
+    <a href="#planos">Grátis ou pago</a>
+    <a class="gh" href="https://github.com/marcusforti/copiloto-reuniao">GitHub</a>
+  </nav>
+</header>
+
+<main>
+<section class="wrap hero">
+  <div>
+    <h1>Na hora do “tá caro”, você vai saber o que responder.</h1>
+    <p class="lead">O Copiloto escuta a sua call de venda ou mentoria e mostra na tela, ao vivo, o que falar agora: a próxima pergunta, a resposta para a objeção e o que o cliente acabou de revelar. Grátis, em português, roda no Claude Code.</p>
+    <div class="ctas">
+      <button class="btn ouro" data-copiar="#prompt-instalar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        Copiar instalação
+      </button>
+      <a class="btn contorno" href="https://github.com/marcusforti/copiloto-reuniao">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.42c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.24 2.76.12 3.05.74.8 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
+        Ver no GitHub
+      </a>
+    </div>
+    <p class="nota">Funciona no Google Meet, Zoom e Teams, sem colocar robô na reunião. Windows e Mac.</p>
+  </div>
+
+  <div class="demo" aria-label="Demonstração do painel do copiloto durante uma venda">
+    <div class="demo-topo">
+      <span class="aovivo"><i></i>AO VIVO</span>
+      <span id="demoFase">Diagnóstico</span>
+      <span class="meds"><span class="med v">VOCÊ <b><span id="mv"></span></b></span><span class="med c">CLIENTE <b><span id="mc"></span></b></span></span>
+    </div>
+    <div class="demo-corpo">
+      <div class="fale" id="demoFale"><small>FALE AGORA</small><p id="demoAgora">Pergunte como está a agenda da clínica hoje.</p><p class="pq" id="demoPq">Quem fala primeiro do problema é o cliente.</p></div>
+      <div class="sinais" id="demoSinais"></div>
+      <div class="falas" id="demoFalas" aria-live="off"></div>
+    </div>
+  </div>
+</section>
+
+<section class="bloco" id="como">
+  <div class="wrap">
+    <h2>Você conduz a conversa. Ele cuida do resto.</h2>
+    <p class="lead">Enquanto você fala, o copiloto ouve os dois lados (o seu microfone e a voz do cliente que sai do computador), transcreve e analisa a conversa com o roteiro de venda ou de mentoria. Cada vez que o cliente revela algo, o painel muda.</p>
+    <div class="tela">
+      <figure>
+        <img src="img/painel.png" alt="Painel do Copiloto de Reunião durante uma venda: Fale agora, próximas perguntas, o que o cliente revelou e objeções" width="1600" height="1000" loading="lazy">
+        <figcaption>Painel durante uma venda simulada. Abre no navegador do PC ou no celular, como segunda tela.</figcaption>
+      </figure>
+      <div class="partes">
+        <div class="parte"><h3><i style="background:var(--ouro)"></i>Fale agora</h3><p>A próxima frase ou pergunta, com o porquê, usando as palavras do próprio cliente. Muda só quando a conversa avança.</p></div>
+        <div class="parte"><h3><i style="background:var(--cliente)"></i>O que o cliente revelou</h3><p>Dores, números, desejos, prazos e quem decide, organizados enquanto ele fala.</p></div>
+        <div class="parte"><h3><i style="background:var(--alerta)"></i>Objeções com resposta</h3><p>“Tá caro”, “vou pensar”, “preciso falar com meu sócio”: a causa provável e o caminho para responder.</p></div>
+        <div class="parte"><h3><i style="background:var(--voce)"></i>Resumo e follow-up</h3><p>No fim, tarefas com dono e prazo, quanto você falou e quanto o cliente falou, e a mensagem de WhatsApp pronta para enviar. <a href="exemplo-resumo.html">Veja um resumo de exemplo</a>.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bloco" id="instalar">
+  <div class="wrap">
+    <h2>Instala em um minuto. Quem instala é o seu Claude.</h2>
+    <p class="lead">Você precisa do Claude Code no computador. O resto ele faz sozinho: baixa, configura e testa o seu microfone.</p>
+    <div class="passos">
+      <div class="passo"><h3>Copie o pedido</h3><p>O texto abaixo já tem o link do repositório e o passo a passo para o Claude seguir.</p></div>
+      <div class="passo"><h3>Cole no Claude Code</h3><p>Ele instala, pergunta se você quer o modo grátis ou o pago e faz um teste de áudio com você.</p></div>
+      <div class="passo"><h3>Antes da call</h3><p>Digite <code>/reuniao venda Nome-do-cliente o que você vende</code>. O painel abre. No fim, <code>/reuniao-fim</code>.</p></div>
+    </div>
+    <div class="copiar">
+      <div class="copiar-topo"><span>Cole isto no Claude Code</span><button class="btn ouro mini" data-copiar="#prompt-instalar">Copiar</button></div>
+      <pre id="prompt-instalar">Instala pra mim o Copiloto de Reunião: https://github.com/marcusforti/copiloto-reuniao
+Siga o arquivo INSTALAR.md do repositório.</pre>
+    </div>
+  </div>
+</section>
+
+<section class="bloco" id="planos">
+  <div class="wrap">
+    <h2>Grátis no seu PC, ou mais rápido pagando centavos.</h2>
+    <p class="lead">Os dois caminhos usam o mesmo painel e os mesmos roteiros. A diferença é onde a transcrição acontece. Dá para trocar com uma linha.</p>
+    <div class="planos">
+      <div class="plano gratis">
+        <h3>Grátis</h3>
+        <p class="preco">R$ 0, para sempre</p>
+        <ul>
+          <li>Transcrição no seu computador (Whisper). O áudio não sai do PC.</li>
+          <li>De 2 a 5 segundos de atraso</li>
+          <li>Usa ~1 GB de memória durante a call</li>
+          <li>Conselhos pelo Claude Code, no plano que você já tem</li>
+        </ul>
+        <p class="quem">Para quem quer começar hoje e manter tudo no próprio computador.</p>
+      </div>
+      <div class="plano pago">
+        <h3>Pago</h3>
+        <p class="preco">Centavos por hora, direto no provedor</p>
+        <ul>
+          <li>Transcrição em tempo real (Deepgram ou Soniox), com menos de 1 segundo</li>
+          <li>Quase não pesa no PC: bom para notebook simples</li>
+          <li>Deepgram dá US$ 200 de crédito para conta nova, que rendem centenas de horas</li>
+          <li>Opcional: conselhos pela API da Anthropic, sem depender do Claude Code aberto</li>
+        </ul>
+        <p class="quem">Para quem faz muitas calls por semana e quer a resposta mais rápida.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bloco">
+  <div class="wrap">
+    <h2>Testado numa call de verdade. E consertado.</h2>
+    <p class="lead">A primeira versão foi usada numa mentoria real. Três coisas deram errado, e cada uma virou uma proteção desta versão.</p>
+    <div class="historia">
+      <div class="falha"><p class="antes">Na primeira call</p><h3>A voz do vendedor sumiu</h3><p>O fone mudou de modo quando a reunião começou, e o copiloto continuou ouvindo o microfone antigo.</p><p class="agora">Agora ele segue o microfone que a reunião usa, ouve todas as saídas de áudio e avisa na tela se parar de ouvir alguém.</p></div>
+      <div class="falha"><p class="antes">Na primeira call</p><h3>Faltou memória</h3><p>A transcrição caiu com o navegador aberto, e a troca de emergência para um modelo pior derrubou a qualidade.</p><p class="agora">Agora usa 7 vezes menos memória reservada, tenta de novo sem rebaixar a qualidade e transcreveu 94–96% certo no teste.</p></div>
+      <div class="falha"><p class="antes">Na primeira call</p><h3>Parou com 2 horas</h3><p>A gravação rodava dentro do Claude Code e morreu no limite de tempo das tarefas em segundo plano.</p><p class="agora">Agora o motor roda num processo próprio, sem limite, e retoma o acompanhamento de onde parou.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="bloco">
+  <div class="wrap">
+    <h2>Perguntas que todo mundo faz</h2>
+    <div class="faq">
+      <details><summary>O cliente percebe?</summary><p>Não entra robô nenhum na reunião: o copiloto ouve o áudio que já passa pelo seu computador. Mesmo assim, avise no começo que a conversa está sendo transcrita. É o certo e é o que a LGPD pede. Uma frase basta: “vou usar um assistente que anota a nossa conversa, tudo bem?”.</p></details>
+      <details><summary>E se eu compartilhar a tela?</summary><p>Compartilhe só a aba ou a janela da apresentação, nunca a tela inteira. Melhor ainda: abra o painel no celular pelo QR code e use como segunda tela.</p></details>
+      <details><summary>Preciso pagar alguma coisa?</summary><p>No modo grátis, não. Você só precisa do Claude Code com um plano pago do Claude, que é onde os conselhos são gerados. O modo pago cobra centavos por hora diretamente no provedor de transcrição que você escolher.</p></details>
+      <details><summary>Funciona no Mac?</summary><p>Sim. O Mac não deixa programas ouvirem o som do sistema sem um “cabo virtual”, então a instalação inclui o BlackHole (grátis) e um passo de um minuto nas configurações de áudio.</p></details>
+      <details><summary>Serve para mentoria, não só para venda?</summary><p>Sim. Tem os modos venda, mentoria, diagnóstico e reunião geral, cada um com o seu roteiro. Na mentoria ele acompanha as vitórias, os desafios e os compromissos de cada sessão. Os roteiros ficam em arquivos de texto e dá para colocar o seu próprio método.</p></details>
+      <details><summary>Onde ficam as minhas reuniões?</summary><p>No seu computador, na pasta CopilotoReuniao. Cada reunião tem transcrição, conselhos e um resumo em HTML. Nada vai para servidor nosso.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap">
+    <h2>A próxima call você não faz sozinho.</h2>
+    <p class="lead">Instala hoje, testa com o /reuniao-demo e usa na próxima venda. Se quiser ajuda para colocar isso no seu time, me chama.</p>
+    <div class="ctas">
+      <button class="btn ouro" data-copiar="#prompt-instalar">Copiar instalação para o Claude</button>
+      <a class="btn contorno" href="https://wa.me/5515998346245?text=Oi%20Marcus%2C%20vim%20pela%20p%C3%A1gina%20do%20Copiloto%20de%20Reuni%C3%A3o" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 15l-1.4 5.1 5.25-1.38A9.9 9.9 0 1 0 12.04 2Zm0 18.1a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.11.82.83-3.04-.2-.31a8.2 8.2 0 1 1 6.96 3.86Zm4.5-6.14c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.55.12-.17.25-.64.8-.78.97-.14.16-.29.18-.53.06a6.7 6.7 0 0 1-3.32-2.9c-.25-.43.25-.4.72-1.33.08-.16.04-.31-.02-.43l-.75-1.8c-.2-.48-.4-.41-.55-.42h-.47a.9.9 0 0 0-.65.31 2.73 2.73 0 0 0-.86 2.03 4.74 4.74 0 0 0 1 2.52 10.86 10.86 0 0 0 4.16 3.68c1.55.67 2.16.73 2.94.61.47-.07 1.46-.6 1.67-1.18.2-.58.2-1.08.14-1.18-.06-.1-.22-.16-.47-.28Z"/></svg>
+        Falar com o Marcus no WhatsApp
+      </a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Copiloto de Reunião · código aberto (MIT) · feito por <a href="https://github.com/marcusforti">Marcus Forti</a></span>
+    <span>Transcrição automática pode errar nomes e números. Avise o cliente que a conversa está sendo transcrita.</span>
+  </div>
+</footer>
+<div class="toast" id="toast" role="status">Copiado. Agora cole no Claude Code.</div>
+
+<script>
+  // copiar
+  const toast = document.getElementById("toast");
+  document.querySelectorAll("[data-copiar]").forEach(b => b.addEventListener("click", async () => {
+    const txt = document.querySelector(b.dataset.copiar).innerText;
+    try { await navigator.clipboard.writeText(txt); }
+    catch (e) { const t = document.createElement("textarea"); t.value = txt; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+    toast.classList.add("on"); setTimeout(() => toast.classList.remove("on"), 2200);
+  }));
+
+  // demonstração ao vivo do painel
+  const roteiro = [
+    { q: "voce", t: "Me conta: como está a agenda da clínica hoje?" },
+    { q: "cliente", t: "Bem irregular. Tem semana que fico com metade dos horários vazios.", s: ["dor", "DOR", "agenda irregular"] },
+    { q: "cliente", t: "Quase tudo é indicação. Já paguei agência e não deu resultado.", s: ["dor", "TRAUMA", "agência não funcionou"],
+      a: { f: "Diagnóstico", t: "Pergunte quanto custa para ela uma semana com metade da agenda vazia.", p: "Ela tem a dor, mas ainda não deu número. Dor sem número não justifica investimento." } },
+    { q: "cliente", t: "Uns oito mil reais a menos no mês, fácil.", s: ["num", "NÚMERO", "perde ~R$ 8 mil/mês"] },
+    { q: "voce", t: "São quatro mil e novecentos, ou dez de quinhentos e quarenta." },
+    { q: "cliente", t: "Nossa, achei caro. Tenho medo de jogar dinheiro fora de novo.", s: ["dor", "OBJEÇÃO", "medo de repetir a agência"],
+      a: { f: "Objeções", t: "Não defenda o preço. Pergunte o que faltou na agência e faça a conta: 3 pacientes pagam a mentoria.", p: "“Caro” aqui é medo de errar de novo. Quem perde R$ 8 mil por mês não está falando de preço." } },
+    { q: "cliente", t: "Olhando assim, faz sentido. Mas preciso falar com meu marido.", s: ["sim", "SIM", "“faz sentido”"],
+      a: { f: "Fechamento", t: "Marque agora 15 minutos com ela e o marido juntos. Não encerre sem data e hora.", p: "Ela já disse que faz sentido. Só falta o decisor, e sem data a decisão esfria." } },
+    { q: "cliente", t: "Pode ser. Amanhã às sete da noite funciona.", s: ["sim", "PRÓXIMO PASSO", "amanhã 19h com o marido"] },
+  ];
+  const falasEl = document.getElementById("demoFalas"), sinaisEl = document.getElementById("demoSinais");
+  const agoraEl = document.getElementById("demoAgora"), pqEl = document.getElementById("demoPq"), faleEl = document.getElementById("demoFale"), faseEl = document.getElementById("demoFase");
+  const mv = document.getElementById("mv"), mc = document.getElementById("mc");
+  let falando = null;
+  const reduzido = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  setInterval(() => {
+    mv.style.width = (falando === "voce" ? 45 + Math.random() * 50 : 4 + Math.random() * 6) + "%";
+    mc.style.width = (falando === "cliente" ? 45 + Math.random() * 50 : 4 + Math.random() * 6) + "%";
+  }, 130);
+  const esperar = ms => new Promise(r => setTimeout(r, ms));
+  function fala(item) {
+    const d = document.createElement("div");
+    d.className = "fala " + item.q;
+    d.innerHTML = `<b>${item.q === "voce" ? "VOCÊ" : "CLIENTE"}</b>`;
+    d.append(document.createTextNode(item.t));
+    falasEl.append(d);
+    while (falasEl.children.length > 3) falasEl.firstElementChild.remove();
+  }
+  function sinal([cls, et, txt]) {
+    const s = document.createElement("span");
+    s.className = "sinal " + cls;
+    s.innerHTML = `<em>${et}</em>`;
+    s.append(document.createTextNode(txt));
+    sinaisEl.prepend(s);
+    while (sinaisEl.children.length > 3) sinaisEl.lastElementChild.remove();
+  }
+  async function rodar() {
+    if (reduzido) { roteiro.slice(-3).forEach(fala); return; }
+    while (true) {
+      falasEl.innerHTML = ""; sinaisEl.innerHTML = "";
+      agoraEl.textContent = "Pergunte como está a agenda da clínica hoje."; pqEl.textContent = "Quem fala primeiro do problema é o cliente."; faseEl.textContent = "Abertura";
+      fala(roteiro[0]);
+      for (const item of roteiro.slice(1)) {
+        falando = item.q; await esperar(Math.max(1400, item.t.length * 38)); falando = null;
+        fala(item); if (item.s) sinal(item.s);
+        if (item.a) { await esperar(1300); faseEl.textContent = item.a.f; agoraEl.textContent = item.a.t; pqEl.textContent = item.a.p; faleEl.classList.remove("novo"); void faleEl.offsetWidth; faleEl.classList.add("novo"); }
+        await esperar(900);
+      }
+      await esperar(5000);
+    }
+  }
+  rodar();
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Venda: Camila, clínica de estética (demo)</title>
+<style>
+:root{--bg:#0b0d12;--p:#12151c;--p2:#171b24;--l:#232836;--t:#eef1f6;--s:#b6bdca;--m:#7d8698;--g:#f6c544;--v:#39d98a;--r:#ff6b6b;--b:#5ea8ff}
+@media (prefers-color-scheme: light){:root:not([data-theme=dark]){--bg:#f6f7f9;--p:#fff;--p2:#f0f2f5;--l:#e1e4ea;--t:#11151c;--s:#3d4554;--m:#6b7383;--g:#b8860b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--t);font:16px/1.55 "Segoe UI",system-ui,-apple-system,sans-serif}
+main{max-width:980px;margin:0 auto;padding:32px 16px 80px}
+h1{font-size:clamp(24px,4vw,34px);margin:0 0 4px;letter-spacing:-.02em}.sub{color:var(--m);margin:0 0 24px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+.kpi{background:var(--p);border:1px solid var(--l);border-radius:14px;padding:14px 16px}.kpi b{display:block;font-size:26px}.kpi span{color:var(--m);font-size:13px}
+.barra{height:8px;border-radius:6px;background:var(--b);overflow:hidden;margin-top:8px}.barra i{display:block;height:100%;background:var(--v)}
+section{background:var(--p);border:1px solid var(--l);border-radius:16px;padding:20px 22px;margin-bottom:16px}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--m);margin:0 0 12px}
+ul{margin:0;padding-left:20px}li{margin:4px 0}.vazio{color:var(--m);font-style:italic;margin:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.grid section{margin:0}
+.tarefa{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--l);cursor:pointer}.tarefa:last-child{border:0}
+.tarefa input{margin-top:5px;accent-color:var(--v)}.tarefa em{color:var(--g);font-style:normal}
+.obj{padding:10px 0;border-bottom:1px solid var(--l)}.obj:last-child{border:0}.obj-t{font-weight:650}.obj p{margin:4px 0 0;color:var(--s)}
+.pill{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:6px;margin-right:8px;background:var(--p2);color:var(--m)}
+.pill.resolvida{color:var(--v)}.pill.aberta{color:var(--r)}.pill.parcial{color:var(--g)}
+.fu{background:var(--p2);border:1px solid var(--l);border-radius:12px;margin-top:10px}.fu-top{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--l)}
+.fu pre{margin:0;padding:14px;white-space:pre-wrap;font-family:inherit;font-size:15.5px;line-height:1.55}button{font:inherit;font-size:13px;font-weight:700;border:0;border-radius:8px;padding:6px 12px;background:var(--g);color:#111;cursor:pointer}
+details summary{cursor:pointer;color:var(--s);font-weight:650}.fala{padding:6px 0;border-bottom:1px solid var(--l);color:var(--s);font-size:14.5px}
+.fala .q{font-size:11px;font-weight:800;letter-spacing:.06em;margin-right:6px}.fala.voce .q{color:var(--v)}.fala.cliente .q{color:var(--b)}.fala .h{color:var(--m);font-size:12px;margin-right:6px}
+.resumo p{margin:0 0 10px}.rodape{color:var(--m);font-size:13px;text-align:center;margin-top:30px}
+</style></head><body><main>
+<h1>Venda: Camila, clínica de estética (demo)</h1>
+<p class="sub">Venda · 2026-10-05 02:53 · 3 min · 29 falas</p>
+<div class="kpis">
+ <div class="kpi"><b>51% / 49%</b><span>quem falou mais (VOCÊ / CLIENTE) · ideal você 30–45%</span><div class="barra"><i style="width:51%"></i></div></div>
+ <div class="kpi"><b>4</b><span>perguntas que você fez</span></div>
+ <div class="kpi"><b>2</b><span>objeções</span></div>
+ <div class="kpi"><b>quente</b><span>temperatura do cliente</span></div>
+</div>
+<section class="resumo"><h2>Resumo</h2><p>A Camila tem a agenda irregular: em algumas semanas metade dos horários fica vazia, e ela depende quase só de indicação. Já pagou uma agência que &quot;só fazia post bonito&quot; e não trouxe paciente.</p><p>Ela calculou que perde uns R$ 8 mil por mês nas semanas fracas, com secretária e aluguel fixos. O sonho é contratar mais uma biomédica e parar de atender sábado.</p><p>Achou caro (R$ 4.900 ou 10x de R$ 540) por medo de repetir a experiência da agência. Depois fez a conta: 3 pacientes de harmonização pagam a mentoria, e disse que &quot;faz sentido&quot;. Falta a conversa com o marido, marcada para amanhã às 19h.</p></section>
+<section><h2>Próximos passos</h2><label class="tarefa"><input type="checkbox" data-k="t0"><span><b>Você</b> · Mandar hoje no WhatsApp um resumo curto com a conta dos 3 pacientes <em>até hoje</em></span></label><label class="tarefa"><input type="checkbox" data-k="t1"><span><b>Você</b> · Conversa com a Camila e o marido (15 min) <em>até amanhã 19h</em></span></label><label class="tarefa"><input type="checkbox" data-k="t2"><span><b>Camila</b> · Mostrar o resumo ao marido antes da conversa <em>até amanhã</em></span></label></section>
+<div class="grid">
+ <section><h2>Dores e desejos do cliente</h2><ul><li>Agenda irregular, metade vazia em semanas fracas</li><li>Depende quase só de indicação</li><li>Instagram não traz paciente</li><li>Frustração com agência anterior</li></ul></section>
+ <section><h2>Decisões e combinados</h2><ul><li>Conversa de 15 minutos com a Camila e o marido amanhã às 19h</li></ul></section>
+</div>
+<section><h2>Objeções</h2><div class="obj"><div class="obj-t"><span class="pill resolvida">resolvida</span>Achei caro / medo de jogar dinheiro fora de novo</div><p>Validou o medo, perguntou o que faltou na agência e fez a conta do retorno: 3 pacientes pagam.</p></div><div class="obj"><div class="obj-t"><span class="pill parcial">parcial</span>Preciso falar com meu marido</div><p>Propôs uma conversa curta com os dois e marcou data e hora.</p></div></section>
+<div class="grid">
+ <section><h2>Oportunidades</h2><ul><li>Ela mesma nomeou o problema que a mentoria resolve: transformar seguidor em paciente agendado</li><li>Plano de contratar uma biomédica: crescimento depois da agenda cheia</li></ul></section>
+ <section><h2>Riscos / pontos de atenção</h2><ul><li>O marido pode repetir a objeção da agência: leve a diferença entre post e processo de agendamento</li></ul></section>
+</div>
+<section><h2>Follow-up pronto</h2><div class="fu"><div class="fu-top"><b>Mensagem de WhatsApp</b><button onclick="copiar(this)">Copiar</button></div><pre>Oi Camila! Obrigado pela conversa de hoje.
+
+Resumindo o que você me contou: nas semanas fracas a agenda fica pela metade (uns R$ 8 mil a menos no mês) e o Instagram não traz paciente, mesmo com a agência.
+
+Na mentoria a gente monta com você o processo para transformar seguidor em paciente agendado. Pela sua conta, 3 pacientes de harmonização já pagam o investimento.
+
+Amanhã às 19h a gente conversa com o seu marido, combinado? Te mando o link uns minutos antes.</pre></div></section>
+<div class="grid">
+ <section><h2>O que funcionou</h2><ul><li>Fez o diagnóstico antes de falar da mentoria</li><li>Transformou a dor em número (R$ 8 mil/mês)</li><li>Na objeção de preço, perguntou o que faltou na agência em vez de dar desconto</li></ul></section>
+ <section><h2>Para a próxima</h2><ul><li>Falou o preço antes de ancorar no custo do problema: dava para retomar os R$ 8 mil antes do valor</li><li>Poderia ter perguntado logo no início se mais alguém decide junto</li></ul></section>
+</div>
+<section><details><summary>Transcrição completa (29 falas)</summary><div style="margin-top:12px"><div class="fala voce"><span class="q">VOCÊ</span><span class="h">02:43:39</span> Camila, obrigado por separar esse tempo. Antes de eu te mostrar qualquer coisa, me conta, como está a agenda da clínica hoje.</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:43:51</span> Olha, está bem irregular.</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:43:55</span> Tem semana que lota e tem semana que eu fico com metade dos horários vazios.</div><div class="fala voce"><span class="q">VOCÊ</span><span class="h">02:44:04</span> E de onde vem os pacientes que você atende hoje?</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:44:09</span> Quase tudo é indicação.</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:44:12</span> Eu posto no Instagram, mas não vem quase ninguém de lá.</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:44:18</span> Já paguei uma agência e não deu resultado.</div><div class="fala voce"><span class="q">VOCÊ</span><span class="h">02:44:24</span> Entendi. E quanto custa para você uma semana com metade da agenda vazia?</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:44:32</span> Uns 8 mil reais a menos no mês, fácil.</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:44:38</span> Eu ainda pago a secretária e o aluguel do mesmo jeito.</div><div class="fala voce"><span class="q">VOCÊ</span><span class="h">02:44:45</span> Se a agenda ficasse cheia todas as semanas, o que mudaria para você?</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:44:51</span> Eu conseguiria contratar mais uma biomédica e parar de atender sábado.</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:44:58</span> Esse é o meu sonho, na verdade.</div><div class="fala voce"><span class="q">VOCÊ</span><span class="h">02:45:04</span> Faz todo sentido. O que a gente faz na Mentoria é montar com você um processo para o Instagram trazer paciente todo mês, sem depender de indicação.</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:45:17</span> Tá, mas quanto custa isso?</div><div class="fala voce"><span class="q">VOCÊ</span><span class="h">02:45:22</span> São 4.900 a vista, ou 10 vezes de 540.</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:45:29</span> Nossa, achei caro!</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:45:32</span> Eu já gastei com a agência e não funcionou, tenho medo de jogar dinheiro fora de novo.</div><div class="fala voce"><span class="q">VOCÊ</span><span class="h">02:45:42</span> Super justo esse medo. O que a agência fazia exatamente, e o que faltou.</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:45:50</span> Ele só fazia um post bonito.</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:45:54</span> Ninguém me ensinou a transformar seguidor em paciente agendado.</div><div class="fala voce"><span class="q">VOCÊ</span><span class="h">02:46:01</span> É exatamente essa parte que a gente resolve. Se um paciente novo de harmonização vale uns 2 mil para você, quantos precisaria para se pagar?</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:46:14</span> Uns três, eu acho.</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:46:17</span> Olhando assim faz sentido.</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:46:21</span> Mas eu preciso falar com o meu marido antes.</div><div class="fala voce"><span class="q">VOCÊ</span><span class="h">02:46:27</span> Claro.</div><div class="fala voce"><span class="q">VOCÊ</span><span class="h">02:46:28</span> Quital a gente marcar 15 minutos amanhã com ele junto, para eu tirar as dúvidas dele também.</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:46:37</span> Pode ser.</div><div class="fala cliente"><span class="q">CLIENTE</span><span class="h">02:46:39</span> Amanhã às 7 da noite funciona para nós dois.</div></div></details></section>
+<p class="rodape">Gerado pelo Copiloto de Reunião · transcrição automática, pode conter erros em nomes e números.</p>
+</main>
+<script>
+function copiar(b){const t=b.closest('.fu').querySelector('pre').innerText;navigator.clipboard.writeText(t).then(()=>{b.textContent='Copiado ✓';setTimeout(()=>b.textContent='Copiar',1500)})}
+document.querySelectorAll('.tarefa input').forEach(c=>{const k='2026-10-05_0243_camila-demo-audio:'+c.dataset.k;try{c.checked=localStorage.getItem(k)==='1'}catch(e){}c.onchange=()=>{try{localStorage.setItem(k,c.checked?'1':'0')}catch(e){}}});
+</script></body></html>

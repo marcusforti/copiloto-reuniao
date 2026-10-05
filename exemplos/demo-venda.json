@@ -1,0 +1,40 @@
+{
+  "briefing": {
+    "modo": "venda",
+    "cliente": "Camila (demo)",
+    "empresa": "Clínica de estética",
+    "objetivo": "Fechar a mentoria de captação de pacientes",
+    "oferta": "Mentoria de 90 dias para encher a agenda da clínica",
+    "preco": "R$ 4.900 à vista ou 10x de R$ 540",
+    "vocabulario": ["Camila", "harmonização", "Instagram"]
+  },
+  "falas": [
+    {"quem": "voce", "texto": "Camila, obrigado por separar esse tempo. Antes de eu te mostrar qualquer coisa, me conta: como está a agenda da clínica hoje?"},
+    {"quem": "cliente", "texto": "Olha, está bem irregular. Tem semana que lota e tem semana que eu fico com metade dos horários vazios."},
+    {"quem": "voce", "texto": "E de onde vêm os pacientes que você atende hoje?"},
+    {"quem": "cliente", "texto": "Quase tudo é indicação. Eu posto no Instagram, mas não vem quase ninguém de lá. Já paguei uma agência e não deu resultado."},
+    {"quem": "voce", "texto": "Entendi. E quanto custa para você uma semana com metade da agenda vazia?"},
+    {"quem": "cliente", "texto": "Uns oito mil reais a menos no mês, fácil. E eu ainda pago a secretária e o aluguel do mesmo jeito."},
+    {"quem": "voce", "texto": "Se a agenda ficasse cheia todas as semanas, o que mudaria para você?"},
+    {"quem": "cliente", "texto": "Eu conseguiria contratar mais uma biomédica e parar de atender sábado. Esse é o meu sonho, na verdade."},
+    {"quem": "voce", "texto": "Faz todo sentido. O que a gente faz na mentoria é montar com você um processo para o Instagram trazer paciente todo mês, sem depender de indicação."},
+    {"quem": "cliente", "texto": "Tá, mas quanto custa isso?"},
+    {"quem": "voce", "texto": "São quatro mil e novecentos à vista, ou dez vezes de quinhentos e quarenta."},
+    {"quem": "cliente", "texto": "Nossa, achei caro. Eu já gastei com agência e não funcionou, tenho medo de jogar dinheiro fora de novo."},
+    {"quem": "voce", "texto": "Super justo esse medo. O que a agência fazia exatamente, e o que faltou?"},
+    {"quem": "cliente", "texto": "Eles só faziam post bonito. Ninguém me ensinou a transformar seguidor em paciente agendado."},
+    {"quem": "voce", "texto": "É exatamente essa parte que a gente resolve. Se um paciente novo de harmonização vale uns dois mil para você, quantos precisaria para se pagar?"},
+    {"quem": "cliente", "texto": "Uns três, eu acho. Olhando assim, faz sentido. Mas eu preciso falar com o meu marido antes."},
+    {"quem": "voce", "texto": "Claro. Que tal a gente marcar quinze minutos amanhã com ele junto, para eu tirar as dúvidas dele também?"},
+    {"quem": "cliente", "texto": "Pode ser. Amanhã às sete da noite funciona para nós dois."}
+  ],
+  "conselhos": [
+    {"apos_fala": 0, "dados": {"fase": "Abertura", "agora": "Pergunte como está a agenda hoje antes de falar da mentoria.", "porque": "Quem fala primeiro do problema é ela. Isso cria o motivo da compra.", "perguntas": ["Como está a agenda hoje?", "De onde vêm os pacientes?", "O que você já tentou?"], "sinais": [], "objecoes": [], "evitar": ["Apresentar a oferta antes de entender a dor"]}},
+    {"apos_fala": 4, "dados": {"fase": "Diagnóstico", "agora": "Pergunte quanto custa uma semana com metade da agenda vazia.", "porque": "Ela tem dor (agenda irregular) e já se frustrou com agência. Transforme a dor em número.", "perguntas": ["Quanto você deixa de faturar numa semana fraca?", "O que a agência fazia exatamente?", "Quem decide o investimento além de você?"], "sinais": ["DOR: agenda irregular, metade vazia em algumas semanas", "DOR: depende só de indicação", "TRAUMA: pagou agência e não teve resultado"], "objecoes": [], "evitar": ["Falar mal da agência dela"]}},
+    {"apos_fala": 8, "dados": {"fase": "Diagnóstico", "agora": "Conecte a mentoria ao sonho dela: contratar a biomédica e parar de atender sábado.", "porque": "Ela disse o número (R$ 8 mil/mês perdidos) e o sonho. Agora a oferta tem contexto.", "perguntas": ["Se a agenda enchesse, em quanto tempo você contrataria a biomédica?", "O que te impediu de resolver isso até agora?"], "sinais": ["NÚMERO: perde ~R$ 8 mil por mês nas semanas fracas", "DESEJO: contratar mais uma biomédica e não atender sábado", "DOR: custo fixo (secretária, aluguel) igual todo mês", "TRAUMA: agência só fazia post bonito"], "objecoes": [], "evitar": ["Falar de preço antes de ela perguntar"]}},
+    {"apos_fala": 12, "dados": {"fase": "Objeções", "agora": "Valide o medo e pergunte o que faltou na agência. Não defenda o preço ainda.", "porque": "\"Achei caro\" aqui é medo de errar de novo, não falta de dinheiro. Quem perde R$ 8 mil por mês não está falando de preço.", "perguntas": ["O que a agência fazia, e o que faltou?", "Se tivesse funcionado, quanto teria valido?"], "sinais": ["OBJEÇÃO: achou caro (medo de repetir a agência)", "NÚMERO: perde ~R$ 8 mil por mês", "DESEJO: contratar biomédica, folgar sábado"], "objecoes": [{"objecao": "Achei caro / medo de jogar dinheiro fora", "resposta": "Separe da agência: lá era post, aqui é processo de agendamento. Faça a conta com ela: quantos pacientes pagam o investimento?"}], "evitar": ["Dar desconto agora", "Falar mal da agência"]}},
+    {"apos_fala": 14, "dados": {"fase": "Objeções", "agora": "Faça a conta com ela: com 3 pacientes de harmonização a mentoria se paga.", "porque": "Ela mesma disse que faltou transformar seguidor em paciente. Esse é exatamente o seu método.", "perguntas": ["Quanto vale um paciente novo de harmonização?", "Quantos pacientes novos por mês mudariam o jogo?"], "sinais": ["VITÓRIA: ela nomeou o problema que você resolve", "OBJEÇÃO: achou caro (medo de repetir a agência)", "NÚMERO: perde ~R$ 8 mil por mês"], "objecoes": [{"objecao": "Achei caro / medo de jogar dinheiro fora", "resposta": "Separe da agência: lá era post, aqui é processo de agendamento. Com 3 pacientes se paga."}], "evitar": ["Desconto", "Pressionar"]}},
+    {"apos_fala": 16, "dados": {"fase": "Fechamento", "agora": "Não aceite o \"vou falar com meu marido\" solto: marque 15 minutos com os dois juntos.", "porque": "Ela disse que faz sentido: só falta o decisor. Marque data e hora agora, senão esfria.", "perguntas": ["Que dia e horário fica bom para os dois?", "O que você acha que ele vai perguntar?", "Posso te mandar um resumo para mostrar a ele?"], "sinais": ["SIM: \"olhando assim, faz sentido\"", "DECISOR: o marido participa da decisão", "OBJEÇÃO: achou caro (tratada com a conta dos 3 pacientes)"], "objecoes": [{"objecao": "Preciso falar com meu marido", "resposta": "Ótimo sinal. Proponha uma conversa curta com os dois e pergunte o que ele costuma questionar."}], "evitar": ["Dar prazo de desconto artificial", "Encerrar sem data marcada"]}},
+    {"apos_fala": 18, "dados": {"fase": "Fechamento", "agora": "Confirme: amanhã às 19h com o marido. Prometa mandar o resumo hoje pelo WhatsApp.", "porque": "Próximo passo com data, hora e decisor presente é o melhor resultado possível de uma primeira call.", "perguntas": ["Qual o melhor WhatsApp para eu mandar o resumo?", "O link do Meet pode ser este mesmo?"], "sinais": ["PRÓXIMO PASSO: amanhã 19h com o marido", "SIM: vê sentido no investimento", "DECISOR: marido"], "objecoes": [], "evitar": ["Mandar proposta longa em PDF; mande resumo curto"]}}
+  ]
+}

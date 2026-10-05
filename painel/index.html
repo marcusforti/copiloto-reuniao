@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d12">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect x=%223%22 y=%227%22 width=%2226%22 height=%2218%22 rx=%225%22 fill=%22none%22 stroke=%22%23f6c544%22 stroke-width=%222.6%22/%3E%3Cpath d=%22M10 19v-6M14 21V11M18 18v-4M22 20v-8%22 stroke=%22%23eef1f6%22 stroke-width=%222.4%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
+<title>Copiloto de Reunião</title>
+<style>
+  :root {
+    --bg: #0b0d12; --panel: #12151c; --panel2: #171b24; --line: #232836; --txt: #eef1f6; --soft: #b6bdca; --mute: #7d8698;
+    --gold: #f6c544; --gold-bg: rgba(246,197,68,.09); --green: #39d98a; --green-bg: rgba(57,217,138,.1);
+    --red: #ff6b6b; --red-bg: rgba(255,107,107,.12); --blue: #5ea8ff; --blue-bg: rgba(94,168,255,.1);
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--txt); font: 16px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif; overflow: hidden; }
+  button { font: inherit; }
+  .app { display: grid; grid-template-rows: auto auto 1fr; height: 100vh; height: 100dvh; }
+
+  header { display: flex; align-items: center; gap: 18px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .live { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 12.5px; letter-spacing: .08em; white-space: nowrap; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--red); animation: ping 1.6s infinite; }
+  .parado .dot { background: var(--mute); animation: none; }
+  @keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(255,107,107,.6); } 70%, 100% { box-shadow: 0 0 0 8px rgba(255,107,107,0); } }
+  .fases { flex: 1; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; max-width: 720px; }
+  .fase { position: relative; padding-top: 10px; font-size: 12px; color: var(--mute); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fase::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px; border-radius: 4px; background: var(--line); }
+  .fase.feita { color: var(--soft); } .fase.feita::before { background: var(--green); }
+  .fase.atual { color: var(--gold); font-weight: 700; } .fase.atual::before { background: var(--gold); }
+  .medidores { display: flex; gap: 14px; align-items: center; }
+  .med { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 800; letter-spacing: .06em; color: var(--mute); }
+  .med .bar { width: 64px; height: 8px; border-radius: 6px; background: var(--line); overflow: hidden; }
+  .med .bar i { display: block; height: 100%; width: 0; border-radius: 6px; transition: width .12s linear; }
+  .med.voce .bar i { background: var(--green); } .med.cliente .bar i { background: var(--blue); }
+  .med.mudo { color: var(--red); }
+  .icone { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); color: var(--soft); cursor: pointer; display: grid; place-items: center; font-size: 15px; }
+  .icone:hover { color: var(--gold); border-color: var(--gold); }
+  .relogio { color: var(--mute); font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  .faixa { display: none; padding: 9px 20px; font-size: 14px; font-weight: 600; }
+  .faixa.alerta { display: block; background: var(--red-bg); color: #ffc2c2; border-bottom: 1px solid rgba(255,107,107,.35); }
+  .faixa.aviso { display: flex; gap: 12px; align-items: center; background: var(--gold-bg); color: var(--gold); border-bottom: 1px solid rgba(246,197,68,.3); }
+  .faixa.aviso button { margin-left: auto; background: none; border: 1px solid currentColor; color: inherit; border-radius: 8px; padding: 2px 10px; cursor: pointer; font-size: 12px; font-weight: 700; }
+
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 390px; min-height: 0; }
+  .principal { overflow-y: auto; padding: 20px 22px 40px; display: flex; flex-direction: column; gap: 16px; }
+  aside { border-left: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; position: relative; }
+
+  .agora { position: relative; background: linear-gradient(180deg, var(--gold-bg), transparent 70%), var(--panel2); border: 1px solid rgba(246,197,68,.45); border-radius: var(--radius); padding: 18px 22px; }
+  .agora.antigo { border-color: var(--line); background: var(--panel2); }
+  .agora.novo { animation: brilho 2.4s ease-out; }
+  @keyframes brilho { 0% { box-shadow: 0 0 0 0 rgba(246,197,68,.75); border-color: var(--gold); } 100% { box-shadow: 0 0 0 22px rgba(246,197,68,0); } }
+  .agora-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; min-height: 32px; }
+  .rotulo { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+  .agora.antigo .rotulo { color: var(--mute); }
+  .hora-card { font-size: 12px; font-weight: 700; color: var(--mute); }
+  .nav { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .nav .pos { font-size: 12.5px; color: var(--soft); min-width: 60px; text-align: center; font-variant-numeric: tabular-nums; }
+  .seta { width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--txt); cursor: pointer; font-size: 16px; display: grid; place-items: center; }
+  .seta:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+  .seta:disabled { opacity: .3; cursor: default; }
+  .aovivo { height: 32px; padding: 0 12px; border-radius: 10px; border: 0; background: var(--gold); color: #111; font-size: 12px; font-weight: 800; cursor: pointer; display: none; }
+  .agora.antigo .aovivo { display: block; }
+  .aviso-novo { display: none; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--gold); color: #111; border: 0; border-radius: 999px; padding: 4px 14px; font-size: 12px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+  .frase { font-size: clamp(22px, 2.4vw, 32px); line-height: 1.32; font-weight: 650; letter-spacing: -.01em; }
+  .agora.antigo .frase { color: var(--soft); }
+  .porque { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); color: var(--soft); font-size: 14.5px; }
+  .porque b { color: var(--mute); font-weight: 800; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; margin-right: 6px; }
+  .pontos { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+  .ponto { width: 18px; height: 5px; border-radius: 3px; background: var(--line); border: 0; padding: 0; cursor: pointer; }
+  .ponto.sel { background: var(--gold); }
+  .atalho { font-size: 11.5px; color: var(--mute); margin-left: auto; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 1250px) { .grid2 { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 20px; }
+  .card h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--mute); }
+  .card h2 .n { margin-left: auto; font-weight: 600; letter-spacing: 0; }
+  .card.mudou { animation: realce 1.8s ease-out; }
+  @keyframes realce { 0% { border-color: var(--blue); } 100% { border-color: var(--line); } }
+  .perg { list-style: none; margin: 0; padding: 0; counter-reset: p; }
+  .perg li { counter-increment: p; display: flex; gap: 12px; padding: 9px 10px; margin: 0 -10px; border-radius: 10px; cursor: pointer; font-size: 16.5px; line-height: 1.4; }
+  .perg li:hover { background: var(--panel2); }
+  .perg li::before { content: counter(p); flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; background: var(--blue-bg); color: var(--blue); margin-top: 1px; }
+  .perg li.feita { color: var(--mute); text-decoration: line-through; }
+  .perg li.feita::before { content: "✓"; background: var(--green-bg); color: var(--green); }
+  .dica { font-size: 12px; color: var(--mute); margin-top: 6px; }
+  .sinais { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+  .sinais li { font-size: 14.5px; line-height: 1.45; color: var(--soft); }
+  .tag { display: inline-block; font-size: 10.5px; font-weight: 800; letter-spacing: .06em; padding: 2px 8px; border-radius: 6px; margin-right: 6px; vertical-align: 1px; background: var(--blue-bg); color: var(--blue); }
+  .tag.vermelha { background: var(--red-bg); color: var(--red); } .tag.verde { background: var(--green-bg); color: var(--green); } .tag.ouro { background: var(--gold-bg); color: var(--gold); }
+  .trava { border-radius: 12px; background: var(--panel2); border: 1px solid var(--line); margin-top: 10px; }
+  .trava:first-child { margin-top: 0; }
+  .trava summary { list-style: none; cursor: pointer; padding: 11px 14px; font-weight: 650; display: flex; gap: 10px; }
+  .trava summary::-webkit-details-marker { display: none; }
+  .trava summary::before { content: "▸"; color: var(--red); transition: transform .15s; }
+  .trava[open] summary::before { transform: rotate(90deg); }
+  .trava p { margin: 0; padding: 0 14px 13px 32px; color: var(--soft); font-size: 15px; }
+  .evitar { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .evitar li { font-size: 13.5px; padding: 6px 12px; border-radius: 999px; background: var(--red-bg); color: #ffb3b3; }
+  .evitar li::before { content: "✕ "; font-weight: 800; }
+
+  .abas { display: flex; padding: 8px 12px 0; gap: 4px; border-bottom: 1px solid var(--line); }
+  .aba { flex: 1; background: none; border: 0; color: var(--mute); font-size: 13px; font-weight: 700; padding: 10px 8px 12px; cursor: pointer; border-bottom: 2px solid transparent; }
+  .aba.ativa { color: var(--txt); border-bottom-color: var(--gold); }
+  .aba .cont { font-weight: 600; color: var(--mute); margin-left: 4px; }
+  .lista { flex: 1; overflow-y: auto; padding: 8px 16px 24px; }
+  .oculta { display: none !important; }
+  .h-item { position: relative; padding: 10px 10px 10px 20px; margin-left: 6px; border-left: 2px solid var(--line); font-size: 14px; color: var(--soft); cursor: pointer; border-radius: 0 10px 10px 0; }
+  .h-item:hover { background: var(--panel2); }
+  .h-item::before { content: ""; position: absolute; left: -6px; top: 15px; width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+  .h-item.atual { color: var(--txt); } .h-item.atual::before { background: var(--gold); }
+  .h-item.sel { background: var(--gold-bg); }
+  .h-item .h { display: block; font-size: 11.5px; font-weight: 800; color: var(--gold); margin-bottom: 2px; }
+  .t-item { padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; color: var(--soft); }
+  .t-item .quem { font-size: 11px; font-weight: 800; letter-spacing: .06em; margin-right: 6px; }
+  .t-item.cliente .quem { color: var(--blue); } .t-item.voce .quem { color: var(--green); }
+  .t-item .h { font-size: 11px; color: var(--mute); }
+  .t-item:last-child { color: var(--txt); }
+  .voltar { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: none; background: var(--gold); color: #111; border: 0; border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 800; cursor: pointer; }
+  .vazio { color: var(--mute); font-style: italic; font-size: 14px; }
+  .rodape-status { padding: 8px 16px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--mute); display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; place-items: center; z-index: 10; }
+  .modal.aberto { display: grid; }
+  .modal-box { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px; width: min(360px, calc(100vw - 32px)); text-align: center; }
+  .modal-box h3 { margin: 0 0 6px; }
+  .modal-box p { color: var(--soft); font-size: 14px; margin: 0 0 14px; }
+  #qr { background: #fff; padding: 12px; border-radius: 12px; display: inline-block; }
+  .url { font-size: 12px; color: var(--mute); word-break: break-all; margin-top: 10px; }
+  .fechar { margin-top: 14px; background: var(--gold); color: #111; border: 0; border-radius: 10px; padding: 8px 18px; font-weight: 800; cursor: pointer; }
+  .encerrado { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--panel2); border: 1px solid var(--line); border-radius: 999px; padding: 8px 18px; font-size: 13px; color: var(--soft); display: none; z-index: 5; }
+
+  /* modo compacto / celular: só o essencial, grande */
+  body.compacto main { grid-template-columns: 1fr; }
+  body.compacto aside, body.compacto #cSin, body.compacto #cEvit, body.compacto .fases, body.compacto .atalho, body.compacto .pontos { display: none !important; }
+  body.compacto .grid2 { grid-template-columns: 1fr; }
+  body.compacto .frase { font-size: clamp(22px, 6vw, 30px); }
+  @media (max-width: 860px) {
+    body { overflow: auto; } .app { height: auto; min-height: 100dvh; }
+    main { grid-template-columns: 1fr; }
+    aside { border-left: 0; border-top: 1px solid var(--line); height: 60vh; }
+    header { flex-wrap: wrap; gap: 10px; padding: 10px 16px; }
+    .fases { display: none; }
+    .principal { padding: 16px; }
+    .relogio { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header id="topo">
+    <div class="live"><span class="dot"></span><span id="liveTxt">AO VIVO</span></div>
+    <div class="fases" id="fases"></div>
+    <div class="medidores">
+      <div class="med voce" id="medVoce"><span id="rotVoce">VOCÊ</span><div class="bar"><i></i></div></div>
+      <div class="med cliente" id="medCliente"><span id="rotCliente">CLIENTE</span><div class="bar"><i></i></div></div>
+    </div>
+    <button class="icone" id="btnCompacto" title="Modo compacto (C)">⤢</button>
+    <button class="icone" id="btnCelular" title="Abrir no celular" aria-label="Abrir no celular"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></svg></button>
+    <div class="relogio" id="relogio"></div>
+  </header>
+  <div>
+    <div class="faixa" id="faixaAlerta"></div>
+    <div class="faixa" id="faixaAviso">🔒 Vai compartilhar a tela? Compartilhe só a aba ou janela da apresentação, nunca a tela inteira: o cliente veria este painel.<button id="okAviso">Entendi</button></div>
+  </div>
+  <main>
+    <div class="principal">
+      <section class="agora" id="agoraCard">
+        <button class="aviso-novo" id="avisoNovo">Novo conselho ↑</button>
+        <div class="agora-top">
+          <span class="rotulo" id="rotulo">Fale agora</span>
+          <span class="hora-card" id="horaCard"></span>
+          <div class="nav">
+            <button class="aovivo" id="aoVivo">Voltar ao atual</button>
+            <button class="seta" id="ant" title="Anterior (←)">‹</button>
+            <span class="pos" id="pos"></span>
+            <button class="seta" id="prox" title="Próximo (→)">›</button>
+          </div>
+        </div>
+        <div class="frase" id="frase">Ouvindo a reunião…</div>
+        <div class="porque" id="porqueBox" style="display:none"><b>Por quê</b><span id="porque"></span></div>
+        <div class="pontos" id="pontos"></div>
+      </section>
+      <div class="grid2">
+        <section class="card" id="cPerg"><h2>Próximas perguntas</h2><ul class="perg" id="perguntas"></ul><div class="dica">Toque numa pergunta para marcar como feita.</div></section>
+        <section class="card" id="cSin"><h2>O que o cliente revelou <span class="n" id="nSin"></span></h2><ul class="sinais" id="sinais"></ul></section>
+      </div>
+      <section class="card" id="cTrav"><h2>Objeções e como responder</h2><div id="objecoes"></div></section>
+      <section class="card" id="cEvit"><h2>Evite</h2><ul class="evitar" id="evitar"></ul></section>
+    </div>
+    <aside>
+      <div class="abas">
+        <button class="aba ativa" data-aba="hist">Histórico<span class="cont" id="nHist"></span></button>
+        <button class="aba" data-aba="trans">Transcrição<span class="cont" id="nTrans"></span></button>
+      </div>
+      <div class="lista" id="hist"></div>
+      <div class="lista oculta" id="trans"></div>
+      <button class="voltar" id="voltar">↓ Ir para o fim</button>
+      <div class="rodape-status" id="rodape"></div>
+    </aside>
+  </main>
+</div>
+<div class="modal" id="modalCel"><div class="modal-box">
+  <h3>Abrir no celular</h3>
+  <p>Aponte a câmera do celular. Ele precisa estar na mesma Wi-Fi deste computador.</p>
+  <div id="qr"></div>
+  <div class="url" id="urlCel"></div>
+  <button class="fechar" id="fecharCel">Fechar</button>
+</div></div>
+<div class="encerrado" id="encerrado">Reunião encerrada · peça o resumo com /reuniao-fim</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  const FASES = {
+    venda: ["Abertura", "Diagnóstico", "Apresentação", "Objeções", "Fechamento"],
+    mentoria: ["Check-in", "Vitórias", "Desafios", "Plano", "Compromissos"],
+    diagnostico: ["Abertura", "Situação", "Problemas", "Impacto", "Próximos passos"],
+    geral: ["Abertura", "Discussão", "Decisões", "Próximos passos"],
+  };
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const ler = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch (e) { return d; } };
+  const gravar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  const params = new URLSearchParams(location.search);
+  const K = params.get("k") ? "?k=" + encodeURIComponent(params.get("k")) : "";
+
+  let historico = [], vistos = [], feitas = new Set(ler("feitas", [])), ver = null, ultimo = {}, agoraAnterior = null;
+  let rot = { voce: "VOCÊ", cliente: "CLIENTE" }, urlCelular = null, sessaoId = null;
+
+  function corDaTag(t) {
+    if (/DOR|PROBLEMA|TRAVA|RISCO|MEDO|CONCORRENTE|OBJE/.test(t)) return "vermelha";
+    if (/OPORTUNIDADE|VIT[ÓO]RIA|COMPRA|DECIS|INTERESSE|SIM/.test(t)) return "verde";
+    if (/PROPOSTA|NÚMERO|NUMERO|META|DATA|PRAZO|LEAD|ORÇAMENTO|ORCAMENTO|PRE[ÇC]O/.test(t)) return "ouro";
+    return "";
+  }
+  function sinalHTML(s) {
+    const m = String(s).match(/^([A-ZÀ-Ú0-9 º()\/\-]{3,40}):\s*(.*)$/);
+    return m ? `<span class="tag ${corDaTag(m[1])}">${esc(m[1])}</span>${esc(m[2])}` : esc(s);
+  }
+  function realcar(id) { const el = $(id); el.classList.remove("mudou"); void el.offsetWidth; el.classList.add("mudou"); }
+  function mudou(chave, valor) { const j = JSON.stringify(valor ?? null); if (ultimo[chave] === j) return false; const tinha = chave in ultimo; ultimo[chave] = j; return tinha ? "real" : "inicial"; }
+
+  function mostrarCard() {
+    const n = historico.length; if (!n) return;
+    const i = ver === null ? n - 1 : ver, item = historico[i], atual = i === n - 1;
+    $("agoraCard").classList.toggle("antigo", !atual);
+    $("rotulo").textContent = atual ? "Fale agora" : "Conselho anterior";
+    $("horaCard").textContent = item.hora ? "· " + item.hora : "";
+    $("frase").textContent = item.texto;
+    $("porque").textContent = item.porque || "";
+    $("porqueBox").style.display = item.porque ? "" : "none";
+    $("pos").textContent = `${i + 1} de ${n}`;
+    $("ant").disabled = i === 0; $("prox").disabled = atual;
+    $("pontos").innerHTML = historico.map((_, k) => `<button class="ponto ${k === i ? "sel" : ""}" data-i="${k}"></button>`).join("") + `<span class="atalho">← → navegam · C compacto</span>`;
+    if (atual) $("avisoNovo").style.display = "none";
+    document.querySelectorAll(".h-item").forEach(el => el.classList.toggle("sel", +el.dataset.i === i && !atual));
+  }
+  function irPara(i) { const n = historico.length; ver = (i >= n - 1) ? null : Math.max(0, i); mostrarCard(); }
+  $("ant").onclick = () => irPara((ver === null ? historico.length - 1 : ver) - 1);
+  $("prox").onclick = () => irPara((ver === null ? historico.length - 1 : ver) + 1);
+  $("aoVivo").onclick = $("avisoNovo").onclick = () => irPara(Infinity);
+  $("pontos").addEventListener("click", e => { const b = e.target.closest(".ponto"); if (b) irPara(+b.dataset.i); });
+  document.addEventListener("keydown", e => {
+    if (e.target.matches("input, textarea")) return;
+    if (e.key === "ArrowLeft") { e.preventDefault(); $("ant").click(); }
+    if (e.key === "ArrowRight") { e.preventDefault(); $("prox").click(); }
+    if (e.key === "Escape" || e.key === "End") irPara(Infinity);
+    if (e.key === "c" || e.key === "C") alternarCompacto();
+  });
+
+  function renderHist() {
+    const n = historico.length;
+    $("nHist").textContent = n ? `(${n})` : "";
+    $("hist").innerHTML = n ? historico.map((x, i) => ({ x, i })).reverse().map(({ x, i }) =>
+      `<div class="h-item ${i === n - 1 ? "atual" : ""}" data-i="${i}"><span class="h">${esc(x.hora || "")}${i === n - 1 ? " · atual" : ""}</span>${esc(x.texto)}</div>`).join("")
+      : `<div class="vazio">Os conselhos vão aparecer aqui.</div>`;
+  }
+  $("hist").addEventListener("click", e => { const it = e.target.closest(".h-item"); if (it) irPara(+it.dataset.i); });
+
+  function renderFases(c, b) {
+    const lista = c.fases || FASES[b.modo] || FASES.venda;
+    if (!mudou("fase", [lista, c.fase])) return;
+    const idx = lista.findIndex(f => f.toLowerCase() === String(c.fase || "").toLowerCase());
+    $("fases").innerHTML = lista.map((f, i) => `<div class="fase ${i < idx ? "feita" : i === idx ? "atual" : ""}">${esc(f)}</div>`).join("");
+  }
+
+  function renderConselhos(c, b, hist) {
+    renderFases(c, b);
+    // histórico: o do servidor (compartilhado com o celular) somado ao que este painel já viu
+    if (c.agora && (!vistos.length || vistos[vistos.length - 1].texto !== c.agora)) vistos.push({ hora: c.atualizado, texto: c.agora, porque: c.porque });
+    const doServidor = hist || [];
+    const novoHist = doServidor.length >= vistos.length ? doServidor.slice() : vistos.slice();
+    if (c.agora && (!novoHist.length || novoHist[novoHist.length - 1].texto !== c.agora)) novoHist.push({ hora: c.atualizado, texto: c.agora, porque: c.porque });
+    if (novoHist.length && novoHist[novoHist.length - 1].texto === c.agora && !novoHist[novoHist.length - 1].porque) novoHist[novoHist.length - 1].porque = c.porque;
+    const mudouHist = JSON.stringify(novoHist) !== JSON.stringify(historico);
+    historico = novoHist;
+    if (mudouHist) renderHist();
+    if (c.agora && c.agora !== agoraAnterior) {
+      const primeira = agoraAnterior === null; agoraAnterior = c.agora;
+      if (!primeira) {
+        if (ver === null) { const el = $("agoraCard"); el.classList.remove("novo"); void el.offsetWidth; el.classList.add("novo"); }
+        else $("avisoNovo").style.display = "block";
+      }
+    }
+    mostrarCard();
+    const mp = mudou("perguntas", c.perguntas);
+    if (mp) { $("perguntas").innerHTML = (c.perguntas || []).map(q => `<li class="${feitas.has(q) ? "feita" : ""}" data-q="${esc(q)}">${esc(q)}</li>`).join("") || `<li class="vazio">—</li>`; if (mp === "real") realcar("cPerg"); }
+    const ms = mudou("sinais", c.sinais);
+    if (ms) { $("sinais").innerHTML = (c.sinais || []).map(s => `<li>${sinalHTML(s)}</li>`).join("") || `<li class="vazio">Nada ainda.</li>`; $("nSin").textContent = (c.sinais || []).length || ""; if (ms === "real") realcar("cSin"); }
+    const mo = mudou("objecoes", c.objecoes);
+    if (mo) { $("objecoes").innerHTML = (c.objecoes || []).length ? c.objecoes.map((o, i) => `<details class="trava" ${i === 0 ? "open" : ""}><summary>${esc(o.objecao)}</summary><p>${esc(o.resposta)}</p></details>`).join("") : `<div class="vazio">Nenhuma até agora.</div>`; if (mo === "real") realcar("cTrav"); }
+    const me = mudou("evitar", c.evitar);
+    if (me) { $("evitar").innerHTML = (c.evitar || []).map(e => `<li>${esc(e)}</li>`).join("") || `<li class="vazio" style="background:none">—</li>`; if (me === "real") realcar("cEvit"); }
+  }
+
+  let falas = [];
+  function renderFalas(novas, completo) {
+    if (completo) falas = novas; else falas = falas.concat(novas);
+    if (falas.length > 400) falas = falas.slice(-400);
+    const el = $("trans"), noFim = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+    $("nTrans").textContent = falas.length ? `(${falas.length})` : "";
+    el.innerHTML = falas.length ? falas.map(l => `<div class="t-item ${esc(l.quem)}"><span class="quem">${esc(rot[l.quem] || l.quem)}</span><span class="h">${esc(l.hora)}</span><br>${esc(l.texto)}</div>`).join("") : `<div class="vazio">Aguardando falas…</div>`;
+    if (noFim) el.scrollTop = el.scrollHeight;
+  }
+
+  function nivel(db) { return Math.max(0, Math.min(100, (db + 60) / 50 * 100)); }
+  function renderEstado(e) {
+    rot = Object.assign(rot, e.rotulos || {});
+    $("rotVoce").textContent = rot.voce; $("rotCliente").textContent = rot.cliente;
+    const nv = e.niveis || {};
+    $("medVoce").querySelector("i").style.width = nivel(nv.voce ?? -90) + "%";
+    $("medCliente").querySelector("i").style.width = nivel(nv.cliente ?? -90) + "%";
+    const al = e.alertas || [];
+    $("medVoce").classList.toggle("mudo", al.some(a => a.tipo === "mic"));
+    $("medCliente").classList.toggle("mudo", al.some(a => a.tipo === "cliente"));
+    const fa = $("faixaAlerta");
+    fa.className = "faixa" + (al.length ? " alerta" : "");
+    fa.textContent = al.map(a => "⚠ " + a.msg).join("   ·   ");
+    const parado = e.status === "parado" || e.status === "erro";
+    $("topo").classList.toggle("parado", parado);
+    $("liveTxt").textContent = parado ? "ENCERRADA" : "AO VIVO";
+    $("encerrado").style.display = parado ? "block" : "none";
+    const t = e.transcricao || {};
+    const partes = [];
+    if (t.motor) partes.push("transcrição: " + t.motor + (t.modelo ? " · " + t.modelo : ""));
+    if (e.cerebro) partes.push("conselhos: " + (e.cerebro === "claude-code" ? "Claude Code" : e.cerebro));
+    if (e.atraso_s > 3) partes.push("atraso " + Math.round(e.atraso_s) + "s");
+    if (e.dispositivos && e.dispositivos.microfone) partes.push("mic: " + e.dispositivos.microfone);
+    $("rodape").textContent = partes.join(" · ");
+  }
+
+  let desde = 0, falhas = 0;
+  async function atualizar() {
+    try {
+      const r = await fetch("/api/estado" + (K ? K + "&" : "?") + "desde=" + desde, { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      const d = await r.json(); falhas = 0;
+      if (d.estado && d.estado.inicio && d.estado.inicio !== sessaoId) { sessaoId = d.estado.inicio; desde = 0; falas = []; vistos = []; }
+      renderEstado(d.estado || {});
+      renderConselhos(d.conselhos || {}, d.briefing || {}, d.historico || []);
+      if (d.falas && d.falas.length) { renderFalas(d.falas, desde === 0); desde = d.falas[d.falas.length - 1].id; }
+      else if (desde === 0) renderFalas([], true);
+      urlCelular = d.celular || urlCelular;
+      $("btnCelular").style.display = urlCelular ? "" : "none";
+    } catch (e) {
+      falhas++;
+      if (falhas > 3) { $("liveTxt").textContent = "SEM CONEXÃO"; $("topo").classList.add("parado"); }
+    }
+  }
+
+  $("perguntas").addEventListener("click", e => {
+    const li = e.target.closest("li[data-q]"); if (!li) return;
+    const q = li.dataset.q; feitas.has(q) ? feitas.delete(q) : feitas.add(q);
+    gravar("feitas", [...feitas]); li.classList.toggle("feita");
+  });
+  document.querySelectorAll(".aba").forEach(b => b.addEventListener("click", () => abrirAba(b.dataset.aba)));
+  function abrirAba(nome) {
+    document.querySelectorAll(".aba").forEach(b => b.classList.toggle("ativa", b.dataset.aba === nome));
+    $("hist").classList.toggle("oculta", nome !== "hist"); $("trans").classList.toggle("oculta", nome !== "trans");
+    if (nome === "trans") $("trans").scrollTop = $("trans").scrollHeight;
+    gravar("aba", nome); botaoVoltar();
+  }
+  function botaoVoltar() { const el = $("trans"); $("voltar").style.display = !el.classList.contains("oculta") && el.scrollHeight - el.scrollTop - el.clientHeight > 120 ? "block" : "none"; }
+  $("trans").addEventListener("scroll", botaoVoltar);
+  $("voltar").addEventListener("click", () => { $("trans").scrollTop = $("trans").scrollHeight; });
+  abrirAba(ler("aba", "hist"));
+
+  function alternarCompacto() { document.body.classList.toggle("compacto"); gravar("compacto", document.body.classList.contains("compacto")); }
+  $("btnCompacto").onclick = alternarCompacto;
+  if (params.get("compacto") === "1" || (K && matchMedia("(max-width: 860px)").matches) || ler("compacto", false)) document.body.classList.add("compacto");
+
+  $("btnCelular").onclick = () => {
+    if (!urlCelular) return;
+    $("qr").innerHTML = ""; $("urlCel").textContent = urlCelular;
+    try { new QRCode($("qr"), { text: urlCelular, width: 220, height: 220 }); } catch (e) { $("qr").textContent = "(sem internet para gerar o QR: digite o endereço abaixo)"; }
+    $("modalCel").classList.add("aberto");
+  };
+  $("fecharCel").onclick = () => $("modalCel").classList.remove("aberto");
+  if (!ler("avisoTela", false) && !K) $("faixaAviso").classList.add("aviso");
+  $("okAviso").onclick = () => { $("faixaAviso").classList.remove("aviso"); gravar("avisoTela", true); };
+
+  setInterval(() => { $("relogio").textContent = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); }, 1000);
+  setInterval(atualizar, 700);
+  atualizar(); renderHist();
+</script>
+</body>
+</html>

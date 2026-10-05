@@ -1,0 +1,13 @@
+{
+  "name": "copiloto-reuniao",
+  "version": "1.0.0",
+  "description": "Copiloto de reunião ao vivo para vendas e mentorias: transcreve a call em tempo real (grátis no PC ou por API) e mostra num painel o que falar agora, perguntas, objeções e sinais. No fim, resumo e follow-up.",
+  "author": {
+    "name": "Marcus Forti",
+    "url": "https://github.com/marcusforti"
+  },
+  "homepage": "https://marcusforti.github.io/copiloto-reuniao/",
+  "repository": "https://github.com/marcusforti/copiloto-reuniao",
+  "license": "MIT",
+  "keywords": ["vendas", "mentoria", "reuniao", "transcricao", "copiloto", "whisper", "portugues"]
+}
