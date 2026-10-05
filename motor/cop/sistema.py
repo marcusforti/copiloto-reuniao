@@ -41,14 +41,14 @@ def nucleos() -> int:
 
 
 def escolher_modelo(pedido: str = "auto") -> str:
-    """small é o equilíbrio (≈0,5 GB, ~4x mais rápido que o tempo real num i7 de 4 núcleos).
-    medium só em máquina folgada; base em máquina apertada."""
+    """small é o equilíbrio: sem o MKL ocupa ~300 MB e transcreve 94–96% certo num i7 de 4 núcleos.
+    medium só em máquina folgada; base só em máquina realmente apertada (a qualidade cai bastante)."""
     if pedido and pedido != "auto":
         return pedido
     livre, n = ram_livre_gb(), nucleos()
     if n >= 8 and livre >= 6:
         return "medium"
-    if n >= 4 and livre >= 1.5:
+    if n >= 4 and livre >= 0.5 or ram_total_gb() >= 8:
         return "small"
     return "base"
 
