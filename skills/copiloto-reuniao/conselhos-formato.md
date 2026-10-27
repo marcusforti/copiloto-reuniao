@@ -5,6 +5,7 @@ O painel lê `conselhos.json` na pasta da sessão. Sempre escreva o arquivo INTE
 ```json
 {
   "fase": "Diagnóstico",
+  "tema": "agenda vazia",
   "agora": "Pergunte quanto custa para ela uma semana com metade da agenda vazia.",
   "porque": "Ela tem a dor mas ainda não deu número. Dor sem número não justifica investimento.",
   "perguntas": ["Quanto você deixa de faturar numa semana fraca?", "O que você já tentou?", "Quem decide além de você?"],
@@ -17,6 +18,7 @@ O painel lê `conselhos.json` na pasta da sessão. Sempre escreva o arquivo INTE
 
 ## Regras de ouro
 
+- **`tema`**: o assunto da conversa agora, em até 5 palavras ("salário", "mudança da família", "preço"). Aparece no painel ao lado do conselho. Enquanto o tema não muda, o `agora` também não muda (a não ser que venha uma pergunta ou objeção).
 - **`agora`**: a PRÓXIMA coisa a falar ou fazer, em até 25 palavras, imperativo direto ("Pergunte…", "Confirme…", "Não responda o preço ainda: …"). É lido de relance, no meio da conversa. Nada de "você poderia considerar".
 - **`porque`**: em até 30 palavras, o motivo, citando o que a outra pessoa acabou de dizer.
 - **Só troque o `agora` quando a conversa avançou** (nova informação, nova pergunta, nova objeção, mudança de fase). Se nada mudou, mantenha o mesmo texto: o painel destaca cada troca, e troca demais distrai.

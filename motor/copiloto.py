@@ -346,7 +346,22 @@ def cmd_iniciar(a):
         "criado": time.strftime("%Y-%m-%d %H:%M"),
     }
     escrever_json(s.briefing, briefing)
-    escrever_json(s.conselhos, {"fase": "Abertura", "agora": "Abra com rapport e confirme o objetivo da conversa e o tempo que vocês têm.", "porque": "Começo de reunião: alinhar expectativa evita que a conversa se perca.", "perguntas": [], "sinais": [], "objecoes": [], "evitar": [], "atualizado": time.strftime("%H:%M")})
+    cola = Path(a.cola) if a.cola else config.PASTA_PERFIL / "cola.json"
+    if cola.exists():
+        dados_cola = ler_json(cola, None)
+        if isinstance(dados_cola, list):
+            dados_cola = {"itens": dados_cola}
+        if not (isinstance(dados_cola, dict) and isinstance(dados_cola.get("itens"), list)):
+            print(f"ERRO: a cola {cola} precisa ser JSON no formato {{\"itens\": [{{\"titulo\", \"gatilhos\", \"resposta\"}}]}}")
+            return 1
+        escrever_json(s.cola, dados_cola)
+        print(f"COLA={len(dados_cola['itens'])} respostas prontas ({cola})")
+    abertura = (
+        "Sorria, agradeça o convite e pergunte como vai ser a conversa e quanto tempo vocês têm."
+        if a.modo == "entrevista"
+        else "Abra com rapport e confirme o objetivo da conversa e o tempo que vocês têm."
+    )
+    escrever_json(s.conselhos, {"fase": "Abertura", "tema": "abertura", "agora": abertura, "porque": "Começo de reunião: alinhar expectativa evita que a conversa se perca.", "perguntas": [], "sinais": [], "objecoes": [], "evitar": [], "atualizado": time.strftime("%H:%M")})
     _spawn_destacado([sys.executable, str(Path(__file__).resolve()), "motor", "--sessao", str(s.pasta)], s.pasta / "motor_saida.log")
     print(f"Iniciando o motor (transcrição: {cfg['transcricao']}) …", flush=True)
     fim = time.time() + (a.espera or 90)
@@ -394,8 +409,27 @@ def cmd_motor(a):
     return 0
 
 
+GATILHOS = {
+    "venda": ("caro", "pensar", "depois", "sócio", "socio", "esposa", "marido", "orçamento", "orcamento", "não sei", "nao sei", "concorrente", "desconto", "parcel", "garantia", "quanto custa", "preço", "preco", "valor"),
+    "entrevista": ("salário", "salario", "pretens", "remunera", "benefício", "beneficio", "clt", " pj", "experiência", "experiencia", "por que", "fale sobre", "fala sobre", "me conta", "conte ", "defeito", "fraqueza", "ponto fraco", "melhorar", "mudança", "mudanca", "mudar", "família", "familia", "disponib", "começar", "comecar", "desafio", "conflito", "exemplo", "cinco anos", "5 anos", "contratar", "diferencial", "expectativa"),
+}
+
+
+def _turnos(falas: list, rot: dict) -> list:
+    """Junta falas seguidas da mesma pessoa num turno só: o Claude lê a conversa, não frases picadas."""
+    out = []
+    for p in sorted(falas, key=lambda p: p["ts"]):
+        if out and out[-1]["quem"] == p["quem"]:
+            out[-1]["texto"] += " " + p["texto"]
+        else:
+            out.append({"quem": p["quem"], "hora": p["hora"], "texto": p["texto"]})
+    return [f"  {t['hora']} {rot.get(t['quem'], t['quem'])}: {t['texto']}" for t in out]
+
+
 def cmd_acompanhar(a):
     """Feito para o Monitor do Claude Code: cada lote impresso vira uma notificação para o Claude dar conselhos.
+    O lote fecha por CONTEXTO, não por fala: quando a outra pessoa termina uma pergunta (2 s de silêncio dela) ou
+    quando uma troca de turnos se completa. Assim o conselho acompanha o assunto em vez de pular a cada frase.
     Guarda um cursor em disco: se o Monitor expirar e for religado, continua de onde parou."""
     from cop.sessao import Sessao, ler_json
 
@@ -409,8 +443,11 @@ def cmd_acompanhar(a):
     except Exception:
         cursor = 0
     pendentes, ultimo_envio, alertas_vistos = [], 0.0, {}
-    gatilhos = ("caro", "pensar", "depois", "sócio", "socio", "esposa", "marido", "orçamento", "orcamento", "não sei", "nao sei", "concorrente", "desconto", "parcel", "garantia", "quanto custa", "preço", "preco", "valor")
+    modo = (s.ler_briefing().get("modo") or "venda").lower()
+    gatilhos = GATILHOS.get(modo, GATILHOS["venda"])
+    ultima_chegada = ultima_chegada_cliente = 0.0  # quando chegou a última fala (de qualquer um / da outra pessoa)
     inicio = time.time()
+    ultimo_envio = inicio  # o primeiro contexto sai depois de 30 s (pergunta direta sai antes), não na primeira frase
     while True:
         e = ler_json(s.estado, {}) or {}
         rot.update({k: v for k, v in (e.get("rotulos") or {}).items()})
@@ -418,6 +455,9 @@ def cmd_acompanhar(a):
         if novas:
             pendentes += novas
             cursor = novas[-1]["id"]
+            ultima_chegada = time.time()
+            if any(p["quem"] == "cliente" for p in novas):
+                ultima_chegada_cliente = ultima_chegada
         for al in e.get("alertas", []):
             # o mesmo tipo de alerta só volta a ser avisado depois de 3 min (o de atraso muda o número a cada segundo)
             tipo = al.get("tipo")
@@ -425,11 +465,25 @@ def cmd_acompanhar(a):
                 alertas_vistos[tipo] = time.time()
                 print(f"[COPILOTO ALERTA {time.strftime('%H:%M:%S')}] {al.get('msg')}", flush=True)
         agora = time.time()
-        urgente = any(p["quem"] == "cliente" and (p["texto"].rstrip().endswith("?") or any(g in p["texto"].lower() for g in gatilhos)) for p in pendentes)
-        if pendentes and (agora - ultimo_envio >= a.intervalo or (urgente and agora - ultimo_envio >= 6) or len(pendentes) >= 14):
-            linhas = [f"[COPILOTO {time.strftime('%H:%M:%S')}] {len(pendentes)} fala(s) nova(s){' — CLIENTE perguntou/objetou' if urgente else ''} | conselhos: {s.conselhos}"]
-            pendentes.sort(key=lambda p: p["ts"])
-            linhas += [f"  {p['hora']} {rot.get(p['quem'], p['quem'])}: {p['texto']}" for p in pendentes]
+        pendentes.sort(key=lambda p: p["ts"])
+        # pergunta ou objeção da outra pessoa, e ela já parou de falar (1,5 s sem fala nova dela): hora de responder,
+        # mesmo que você já tenha começado a falar
+        pergunta = any(p["quem"] == "cliente" and (p["texto"].rstrip().endswith("?") or any(g in f" {p['texto'].lower()}" for g in gatilhos)) for p in pendentes)
+        if pergunta and agora - ultima_chegada_cliente < 1.5:
+            pergunta = False
+        calado = agora - ultima_chegada >= 2.0
+        trocou = len({p["quem"] for p in pendentes}) > 1
+        motivo = None
+        if pendentes:
+            if pergunta and agora - ultimo_envio >= 4:
+                motivo = f"{rot.get('cliente', 'CLIENTE')} PERGUNTOU — responda"
+            elif trocou and calado and agora - ultimo_envio >= a.intervalo:
+                motivo = "conversa avançou"
+            elif agora - ultimo_envio >= a.intervalo * 2 or len(pendentes) >= 24:
+                motivo = "atualização"
+        if motivo:
+            linhas = [f"[COPILOTO {time.strftime('%H:%M:%S')}] {motivo} · {len(pendentes)} fala(s) | conselhos: {s.conselhos}"]
+            linhas += _turnos(pendentes, rot)
             print("\n".join(linhas), flush=True)
             s.cursor.write_text(str(cursor))
             pendentes, ultimo_envio = [], agora
@@ -442,11 +496,11 @@ def cmd_acompanhar(a):
         parado = status in ("parado", "erro") or (e.get("atualizado") and agora - e["atualizado"] > 30 and agora - inicio > 30)
         if parado:
             if pendentes:
-                print("\n".join(f"  {p['hora']} {rot.get(p['quem'], p['quem'])}: {p['texto']}" for p in pendentes), flush=True)
+                print("\n".join(_turnos(pendentes, rot)), flush=True)
                 s.cursor.write_text(str(cursor))
             print(f"[COPILOTO FIM] o motor parou (status={status}). Rode /reuniao-fim para o resumo.", flush=True)
             return 0
-        time.sleep(1.0)
+        time.sleep(0.5)
 
 
 def cmd_status(a):
@@ -583,9 +637,10 @@ def main():
     x.add_argument("valor")
     x.set_defaults(f=cmd_chave)
     x = sub.add_parser("iniciar")
-    x.add_argument("--modo", default="venda", choices=["venda", "mentoria", "diagnostico", "geral"])
+    x.add_argument("--modo", default="venda", choices=["venda", "mentoria", "diagnostico", "geral", "entrevista"])
     for k in ("cliente", "empresa", "objetivo", "oferta", "preco", "contexto", "vocabulario"):
         x.add_argument(f"--{k}")
+    x.add_argument("--cola", help="JSON de respostas prontas (padrão: perfil/cola.json)")
     x.add_argument("--transcricao", choices=["local", "deepgram", "soniox"])
     x.add_argument("--cerebro", choices=["claude-code", "api"])
     x.add_argument("--sem-fone", action="store_true")
@@ -597,7 +652,7 @@ def main():
     x.set_defaults(f=cmd_motor)
     x = sub.add_parser("acompanhar")
     x.add_argument("--sessao")
-    x.add_argument("--intervalo", type=int, default=20)
+    x.add_argument("--intervalo", type=int, default=30, help="segundos mínimos entre lotes de contexto (pergunta direta sai antes)")
     x.add_argument("--um-lote", action="store_true", help="sai depois do primeiro lote (para ambientes sem Monitor)")
     x.set_defaults(f=cmd_acompanhar)
     for nome, f in (("status", cmd_status), ("parar", cmd_parar), ("transcricao", cmd_transcricao)):

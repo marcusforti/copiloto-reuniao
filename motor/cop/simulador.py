@@ -70,6 +70,8 @@ def simular_texto(roteiro: Path, velocidade=1.0, abrir=True, manter_s=90):
     b = rot.get("briefing", {})
     s = Sessao.nova(b.get("cliente", "simulacao"), b.get("modo", "venda"))
     escrever_json(s.briefing, {**b, "simulacao": True})
+    if rot.get("cola"):
+        escrever_json(s.cola, {"itens": rot["cola"]})
     srv = Servidor(s, config.carregar())
     srv.iniciar()
     inicio = time.time()
@@ -83,7 +85,9 @@ def simular_texto(roteiro: Path, velocidade=1.0, abrir=True, manter_s=90):
             for c in niveis:
                 alvo = random.uniform(-26, -12) if falando["quem"] == c else random.uniform(-72, -62)
                 niveis[c] = round(niveis[c] * 0.4 + alvo * 0.6, 1)
-            escrever_json(s.estado, _estado_simulado(s, inicio, dict(niveis), dict(contagem), srv.urls))
+            e = _estado_simulado(s, inicio, dict(niveis), dict(contagem), srv.urls)
+            e["parcial"] = {falando["quem"]: falando.get("parcial", "")} if falando["quem"] else {}
+            escrever_json(s.estado, e)
             time.sleep(0.12)
 
     threading.Thread(target=pulsar, daemon=True).start()
@@ -96,9 +100,12 @@ def simular_texto(roteiro: Path, velocidade=1.0, abrir=True, manter_s=90):
     _aplicar_conselhos(s, rot, 0, aplicados)
     for i, f in enumerate(rot["falas"], 1):
         falando["quem"] = f["quem"]
-        dur = max(1.2, len(f["texto"].split()) * 0.34) / velocidade
-        time.sleep(dur)
-        falando["quem"] = None
+        palavras = f["texto"].split()
+        dur = max(1.2, len(palavras) * 0.34) / velocidade
+        for k in range(1, len(palavras) + 1):  # a frase vai aparecendo enquanto a pessoa "fala", como no ao vivo
+            falando["parcial"] = " ".join(palavras[:k])
+            time.sleep(dur / len(palavras))
+        falando["quem"], falando["parcial"] = None, ""
         s.adicionar_fala(f["quem"], f["texto"])
         contagem[f["quem"]] += 1
         print(f"  {f['quem']}: {f['texto'][:70]}", flush=True)

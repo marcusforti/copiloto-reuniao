@@ -109,6 +109,8 @@ class Servidor:
                             "celular": srv.urls.get("celular"),
                         }
                     )
+                elif u.path == "/api/cola":
+                    self._json(ler_json(s.cola, {"itens": []}) or {"itens": []})
                 else:
                     self._json({"erro": "não encontrado"}, 404)
 

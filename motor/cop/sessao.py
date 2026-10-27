@@ -5,6 +5,7 @@ conselhos.json      escrito pelo cérebro (Claude Code ou API) e lido pelo paine
 historico.jsonl     cada "fale agora" que já apareceu (o motor registra quando muda)
 estado.json         status do motor (níveis de áudio, alertas, atraso) atualizado a cada segundo
 briefing.json       modo, cliente, oferta, objetivo
+cola.json           respostas prontas ({"itens": [{"titulo","gatilhos","resposta"}]}): o painel mostra sozinho quando a pessoa toca no assunto
 motor.log           log do motor
 """
 import json
@@ -53,6 +54,7 @@ class Sessao:
         self.historico = self.pasta / "historico.jsonl"
         self.estado = self.pasta / "estado.json"
         self.briefing = self.pasta / "briefing.json"
+        self.cola = self.pasta / "cola.json"
         self.log = self.pasta / "motor.log"
         self.cursor = self.pasta / "cursor_acompanhar.txt"
         self.parar = self.pasta / "PARAR"

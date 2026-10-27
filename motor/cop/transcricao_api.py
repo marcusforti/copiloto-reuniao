@@ -26,7 +26,7 @@ def _pcm16(bloco: np.ndarray) -> bytes:
 
 
 class TranscritorAPI:
-    def __init__(self, cfg: dict, chaves: dict, ao_texto, logar=print, alerta=None, vocabulario=None):
+    def __init__(self, cfg: dict, chaves: dict, ao_texto, logar=print, alerta=None, vocabulario=None, ao_parcial=None):
         if websockets is None:
             raise RuntimeError("Falta a biblioteca 'websockets' (pip install websockets).")
         self.provedor = cfg["transcricao"]
@@ -34,6 +34,7 @@ class TranscritorAPI:
         if not self.chave:
             raise RuntimeError(f"Sem chave da API {self.provedor}. Rode: copiloto chave {self.provedor} SUA_CHAVE")
         self.ao_texto = ao_texto
+        self.ao_parcial = ao_parcial or (lambda canal, texto: None)
         self.logar = logar
         self.alerta = alerta or (lambda *a, **k: None)
         self.termos = [t for t in (vocabulario or []) if t][:50]
@@ -111,6 +112,8 @@ class TranscritorAPI:
                             if t0 is None:
                                 t0 = time.time() - float(msg.get("duration", 0))
                             partes.append(txt)
+                        elif txt:  # resultado provisório: o painel mostra a frase enquanto a pessoa ainda fala
+                            self.ao_parcial(canal, " ".join(partes + [txt]))
                         if msg.get("speech_final") and partes:
                             self._emitir(canal, " ".join(partes), t0)
                             partes, t0 = [], None
@@ -161,6 +164,9 @@ class TranscritorAPI:
                     res = json.loads(bruto)
                     if res.get("error_code") is not None:
                         raise RuntimeError(f"{res['error_code']}: {res.get('error_message')}")
+                    provisorio = "".join(t.get("text", "") for t in res.get("tokens", []) if not t.get("is_final")).strip()
+                    if provisorio:
+                        self.ao_parcial(canal, ("".join(buf) + provisorio).strip())
                     for tok in res.get("tokens", []):
                         if not tok.get("is_final"):
                             continue

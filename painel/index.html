@@ -73,6 +73,25 @@
   .ponto.sel { background: var(--gold); }
   .atalho { font-size: 11.5px; color: var(--mute); margin-left: auto; }
 
+  .tema { font-size: 11.5px; font-weight: 700; color: var(--soft); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+  .tema:empty { display: none; }
+  .cola { background: linear-gradient(180deg, var(--green-bg), transparent 80%), var(--panel2); border: 1px solid rgba(57,217,138,.5); border-radius: var(--radius); padding: 14px 20px; display: none; }
+  .cola.ativa { display: block; }
+  .cola.nova { animation: brilhoVerde 2s ease-out; }
+  @keyframes brilhoVerde { 0% { box-shadow: 0 0 0 0 rgba(57,217,138,.7); } 100% { box-shadow: 0 0 0 20px rgba(57,217,138,0); } }
+  .cola-top { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .cola-top .rotulo { color: var(--green); }
+  .cola-tit { font-weight: 800; font-size: 15px; }
+  .cola-fechar { margin-left: auto; background: none; border: 1px solid var(--line); color: var(--mute); border-radius: 8px; padding: 2px 9px; cursor: pointer; font-size: 12px; }
+  .cola-txt { font-size: clamp(17px, 1.6vw, 21px); line-height: 1.45; white-space: pre-line; }
+  .busca { display: flex; gap: 8px; align-items: center; }
+  .busca input { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; color: var(--txt); padding: 10px 14px; font: inherit; font-size: 15px; }
+  .busca input:focus { outline: none; border-color: var(--green); }
+  .busca .n { font-size: 12px; color: var(--mute); white-space: nowrap; }
+  .busca:has(input[data-vazia="1"]) { display: none; }
+  .ouvindo { min-height: 22px; font-size: 14.5px; color: var(--mute); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ouvindo b { font-style: normal; font-size: 11px; letter-spacing: .06em; margin-right: 6px; }
+  .ouvindo .cliente { color: var(--blue); } .ouvindo .voce { color: var(--green); }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   @media (max-width: 1250px) { .grid2 { grid-template-columns: 1fr; } }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 20px; }
@@ -173,6 +192,7 @@
         <div class="agora-top">
           <span class="rotulo" id="rotulo">Fale agora</span>
           <span class="hora-card" id="horaCard"></span>
+          <span class="tema" id="tema" title="Assunto da conversa agora"></span>
           <div class="nav">
             <button class="aovivo" id="aoVivo">Voltar ao atual</button>
             <button class="seta" id="ant" title="Anterior (←)">‹</button>
@@ -184,6 +204,12 @@
         <div class="porque" id="porqueBox" style="display:none"><b>Por quê</b><span id="porque"></span></div>
         <div class="pontos" id="pontos"></div>
       </section>
+      <div class="ouvindo" id="ouvindo"></div>
+      <section class="cola" id="colaCard">
+        <div class="cola-top"><span class="rotulo">Resposta pronta</span><span class="cola-tit" id="colaTit"></span><button class="cola-fechar" id="colaFechar" title="Esconder (Esc)">✕</button></div>
+        <div class="cola-txt" id="colaTxt"></div>
+      </section>
+      <div class="busca"><input id="colaBusca" placeholder="🔎 Buscar na cola (ex.: salário, família)… atalho: /" autocomplete="off" data-vazia="1"><span class="n" id="colaN"></span></div>
       <div class="grid2">
         <section class="card" id="cPerg"><h2>Próximas perguntas</h2><ul class="perg" id="perguntas"></ul><div class="dica">Toque numa pergunta para marcar como feita.</div></section>
         <section class="card" id="cSin"><h2>O que o cliente revelou <span class="n" id="nSin"></span></h2><ul class="sinais" id="sinais"></ul></section>
@@ -219,6 +245,7 @@
     mentoria: ["Check-in", "Vitórias", "Desafios", "Plano", "Compromissos"],
     diagnostico: ["Abertura", "Situação", "Problemas", "Impacto", "Próximos passos"],
     geral: ["Abertura", "Discussão", "Decisões", "Próximos passos"],
+    entrevista: ["Abertura", "Sua história", "Encaixe", "Logística", "Suas perguntas", "Próximos passos"],
   };
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -289,6 +316,7 @@
 
   function renderConselhos(c, b, hist) {
     renderFases(c, b);
+    $("tema").textContent = c.tema || "";
     // histórico: o do servidor (compartilhado com o celular) somado ao que este painel já viu
     if (c.agora && (!vistos.length || vistos[vistos.length - 1].texto !== c.agora)) vistos.push({ hora: c.atualizado, texto: c.agora, porque: c.porque });
     const doServidor = hist || [];
@@ -352,7 +380,66 @@
     if (e.atraso_s > 3) partes.push("atraso " + Math.round(e.atraso_s) + "s");
     if (e.dispositivos && e.dispositivos.microfone) partes.push("mic: " + e.dispositivos.microfone);
     $("rodape").textContent = partes.join(" · ");
+    const pc = (e.parcial || {});
+    const quem = pc.cliente ? "cliente" : pc.voce ? "voce" : null;
+    $("ouvindo").innerHTML = quem ? `<b class="${quem}">${esc(rot[quem] || quem)}</b>${esc(pc[quem])}…` : "";
   }
+
+  // ---------- cola: respostas prontas que aparecem quando a outra pessoa toca no assunto ----------
+  let cola = [], colaAtual = null, colaFechada = null, colaFechadaEm = 0;
+  const norm = s => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+  async function carregarCola() {
+    try {
+      const r = await fetch("/api/cola" + K, { cache: "no-store" });
+      const d = await r.json();
+      cola = (d.itens || []).map(x => ({ ...x, _g: (x.gatilhos || []).map(norm).filter(Boolean) }));
+    } catch (e) { cola = []; }
+    $("colaBusca").dataset.vazia = cola.length ? "0" : "1";
+    $("colaN").textContent = cola.length ? cola.length + " respostas" : "";
+  }
+  function pontuar(texto) {
+    const t = " " + norm(texto) + " ";
+    let melhor = null, pontos = 0;
+    for (const it of cola) {
+      let p = 0;
+      for (const g of it._g) if (t.includes(" " + g)) p += g.split(" ").length;
+      if (p > pontos) { pontos = p; melhor = it; }
+    }
+    return melhor;
+  }
+  function mostrarCola(it, animar) {
+    const el = $("colaCard");
+    if (!it) { el.classList.remove("ativa"); colaAtual = null; return; }
+    $("colaTit").textContent = it.titulo || "";
+    $("colaTxt").textContent = it.resposta || "";
+    el.classList.add("ativa");
+    if (animar && it !== colaAtual) { el.classList.remove("nova"); void el.offsetWidth; el.classList.add("nova"); }
+    colaAtual = it;
+  }
+  function verificarCola(estado) {
+    if (!cola.length || $("colaBusca").value.trim()) return;
+    // só o que a OUTRA pessoa disse por último: as 2 últimas falas dela e a frase que ela está dizendo agora
+    const delas = falas.filter(f => f.quem === "cliente").slice(-2).map(f => f.texto);
+    const parcial = (estado.parcial || {}).cliente || "";
+    const it = pontuar(delas.concat(parcial).join(" "));
+    if (!it || it === colaAtual) return;
+    if (it === colaFechada && Date.now() - colaFechadaEm < 90000) return;
+    mostrarCola(it, true);
+  }
+  $("colaFechar").onclick = () => { colaFechada = colaAtual; colaFechadaEm = Date.now(); mostrarCola(null); };
+  $("colaBusca").addEventListener("input", e => {
+    const q = e.target.value.trim();
+    if (!q) { mostrarCola(null); return; }
+    const nq = norm(q);
+    const it = pontuar(q) || cola.find(x => norm((x.titulo || "") + " " + (x.resposta || "")).includes(nq));
+    mostrarCola(it || null, false);
+  });
+  $("colaBusca").addEventListener("keydown", e => { if (e.key === "Escape") { e.target.value = ""; mostrarCola(null); e.target.blur(); } });
+  document.addEventListener("keydown", e => {
+    if (e.target.matches("input, textarea")) return;
+    if (e.key === "/" && cola.length) { e.preventDefault(); $("colaBusca").focus(); }
+    if (e.key === "Escape" && colaAtual) $("colaFechar").click();
+  });
 
   let desde = 0, falhas = 0;
   async function atualizar() {
@@ -360,11 +447,12 @@
       const r = await fetch("/api/estado" + (K ? K + "&" : "?") + "desde=" + desde, { cache: "no-store" });
       if (!r.ok) throw new Error(r.status);
       const d = await r.json(); falhas = 0;
-      if (d.estado && d.estado.inicio && d.estado.inicio !== sessaoId) { sessaoId = d.estado.inicio; desde = 0; falas = []; vistos = []; }
+      if (d.estado && d.estado.inicio && d.estado.inicio !== sessaoId) { sessaoId = d.estado.inicio; desde = 0; falas = []; vistos = []; carregarCola(); }
       renderEstado(d.estado || {});
       renderConselhos(d.conselhos || {}, d.briefing || {}, d.historico || []);
       if (d.falas && d.falas.length) { renderFalas(d.falas, desde === 0); desde = Math.max(desde, d.falas[d.falas.length - 1].id); }
       else if (desde === 0) renderFalas([], true);
+      verificarCola(d.estado || {});
       urlCelular = d.celular || urlCelular;
       $("btnCelular").style.display = urlCelular ? "" : "none";
     } catch (e) {

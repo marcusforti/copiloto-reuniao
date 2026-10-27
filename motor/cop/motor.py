@@ -26,6 +26,7 @@ class Motor:
         self.contagem = {VOCE: 0, CLIENTE: 0}
         self.ultima_fala = {VOCE: 0.0, CLIENTE: 0.0}
         self.ultimo_agora = None
+        self.parcial = {VOCE: "", CLIENTE: ""}
         self.servidor = None
         self.cerebro = None
         briefing = sessao.ler_briefing()
@@ -51,7 +52,11 @@ class Motor:
         if limpo:
             self.eco.entrada(canal, limpo, ts)
 
+    def _ao_parcial(self, canal, texto):
+        self.parcial[canal] = texto[-300:]
+
     def _gravar(self, canal, texto, ts):
+        self.parcial[canal] = ""
         self.sessao.adicionar_fala(canal, texto, ts)
         self.contagem[canal] += 1
         self.ultima_fala[canal] = time.time()
@@ -73,7 +78,7 @@ class Motor:
         else:
             from .transcricao_api import TranscritorAPI
 
-            self.stt = TranscritorAPI(self.cfg, self.chaves, self._ao_texto, self.sessao.logar, self.alerta, self.vocabulario)
+            self.stt = TranscritorAPI(self.cfg, self.chaves, self._ao_texto, self.sessao.logar, self.alerta, self.vocabulario, self._ao_parcial)
             self.seg = {}
 
             def ao_bloco(canal, bloco, ts):
@@ -143,6 +148,7 @@ class Motor:
             "niveis": {VOCE: round(mx.nivel[VOCE], 1), CLIENTE: round(mx.nivel[CLIENTE], 1)},
             "ultimo_som": {VOCE: mx.ultimo_som[VOCE], CLIENTE: mx.ultimo_som[CLIENTE]},
             "falas": dict(self.contagem),
+            "parcial": dict(self.parcial),
             "dispositivos": getattr(self.fonte, "dispositivos", {}),
             "alertas": [{"tipo": k, **v} for k, v in self.alertas.items()],
             "atraso_s": round(self.stt.atraso(), 1) if hasattr(self, "stt") else 0,
@@ -206,7 +212,7 @@ class Motor:
                 escrever_json(s.estado, self.estado())
             except Exception as e:
                 s.logar(f"erro no laço principal: {e!r}")
-            self.parar.wait(1.0)
+            self.parar.wait(0.5)  # meio segundo: a frase provisória e a cola aparecem no painel quase junto com a fala
         self.encerrar()
 
     def encerrar(self):
