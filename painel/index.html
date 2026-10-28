@@ -37,6 +37,9 @@
   .med.mudo { color: var(--red); }
   .icone { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); color: var(--soft); cursor: pointer; display: grid; place-items: center; font-size: 15px; }
   .icone:hover { color: var(--gold); border-color: var(--gold); }
+  .dica { height: 34px; padding: 0 14px; border-radius: 10px; border: 0; background: var(--gold); color: #111; font-weight: 800; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .dica:active { transform: scale(.96); }
+  .dica.enviada { background: var(--green); }
   .relogio { color: var(--mute); font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
   .faixa { display: none; padding: 9px 20px; font-size: 14px; font-weight: 600; }
@@ -177,6 +180,7 @@
       <div class="med voce" id="medVoce"><span id="rotVoce">VOCÊ</span><div class="bar"><i></i></div></div>
       <div class="med cliente" id="medCliente"><span id="rotCliente">CLIENTE</span><div class="bar"><i></i></div></div>
     </div>
+    <button class="dica" id="btnDica" title="Pede um conselho agora sobre os últimos 30 s (tecla D)">💡 Dica agora</button>
     <button class="icone" id="btnCompacto" title="Modo compacto (C)">⤢</button>
     <button class="icone" id="btnCelular" title="Abrir no celular" aria-label="Abrir no celular"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></svg></button>
     <div class="relogio" id="relogio"></div>
@@ -384,6 +388,18 @@
     const quem = pc.cliente ? "cliente" : pc.voce ? "voce" : null;
     $("ouvindo").innerHTML = quem ? `<b class="${quem}">${esc(rot[quem] || quem)}</b>${esc(pc[quem])}…` : "";
   }
+
+  // ---------- dica agora: o Claude recebe os últimos 30 s na hora ----------
+  async function pedirDica() {
+    const b = $("btnDica");
+    let ok = false;
+    try { ok = (await fetch("/api/dica" + K, { cache: "no-store" })).ok; } catch (e) {}
+    if (!ok) { try { await fetch(`http://${location.hostname}:8799/dica`, { mode: "no-cors", cache: "no-store" }); ok = true; } catch (e) {} }
+    b.textContent = ok ? "✓ Pedido, aguarde…" : "⚠ Falhou"; b.classList.toggle("enviada", ok);
+    setTimeout(() => { b.textContent = "💡 Dica agora"; b.classList.remove("enviada"); }, 6000);
+  }
+  $("btnDica").onclick = pedirDica;
+  document.addEventListener("keydown", e => { if (!e.target.matches("input, textarea") && (e.key === "d" || e.key === "D")) pedirDica(); });
 
   // ---------- cola: respostas prontas que aparecem quando a outra pessoa toca no assunto ----------
   let cola = [], colaAtual = null, colaFechada = null, colaFechadaEm = 0;

@@ -466,6 +466,26 @@ def cmd_acompanhar(a):
                 print(f"[COPILOTO ALERTA {time.strftime('%H:%M:%S')}] {al.get('msg')}", flush=True)
         agora = time.time()
         pendentes.sort(key=lambda p: p["ts"])
+        pedido = s.pasta / "PEDIDO_DICA"
+        if pedido.exists():  # o usuário apertou "Dica agora" no painel: manda os últimos 30 s na hora
+            try:
+                pedido.unlink()
+            except Exception:
+                pass
+            ids = {p["id"] for p in pendentes}
+            recentes = [p for p in s.ler_falas() if p["ts"] >= agora - 30 and p["id"] not in ids]
+            janela = sorted(recentes + pendentes, key=lambda p: p["ts"])
+            linhas = [f"[COPILOTO {time.strftime('%H:%M:%S')}] {rot.get('voce', 'VOCÊ')} PEDIU DICA AGORA (últimos 30 s) | conselhos: {s.conselhos}"]
+            linhas += _turnos(janela, rot) or ["  (ninguém falou nos últimos 30 s)"]
+            parcial = (e.get("parcial") or {})
+            for quem, txt in parcial.items():
+                if txt:
+                    linhas.append(f"  (falando agora) {rot.get(quem, quem)}: {txt}…")
+            print(chr(10).join(linhas), flush=True)
+            s.cursor.write_text(str(cursor))
+            pendentes, ultimo_envio = [], agora
+            if a.um_lote:
+                return 0
         # pergunta ou objeção da outra pessoa, e ela já parou de falar (1,5 s sem fala nova dela): hora de responder,
         # mesmo que você já tenha começado a falar
         pergunta = any(p["quem"] == "cliente" and (p["texto"].rstrip().endswith("?") or any(g in f" {p['texto'].lower()}" for g in gatilhos)) for p in pendentes)

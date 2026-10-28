@@ -4,6 +4,7 @@ import json
 import secrets
 import socket
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -109,6 +110,9 @@ class Servidor:
                             "celular": srv.urls.get("celular"),
                         }
                     )
+                elif u.path == "/api/dica":
+                    (s.pasta / "PEDIDO_DICA").write_text(str(time.time()))
+                    self._json({"ok": True})
                 elif u.path == "/api/cola":
                     self._json(ler_json(s.cola, {"itens": []}) or {"itens": []})
                 else:
