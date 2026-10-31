@@ -39,6 +39,11 @@ Como usar:
 
 Se a ferramenta Monitor não existir no seu ambiente, use repetidamente `COP acompanhar --sessao "<SESSAO>" --um-lote` (bloqueia até chegar um lote ou 2 min) e responda a cada saída.
 
+## Reunião presencial
+Com `--presencial`, o fone fica no canal `voce` e um segundo microfone (webcam ou de mesa) fica no canal `cliente`, sem ouvir o áudio do PC. O motor tira do canal `cliente` os trechos que o fone já transcreveu, mas não separa vozes de verdade: a voz do usuário ainda pode aparecer como `cliente`. Separe as falas pelo contexto e não trate como pergunta da outra pessoa o que foi claramente o usuário falando.
+
+Se o usuário mostrar o painel para a pessoa, tire de lá preço ainda não dito e qualquer observação sobre ela.
+
 ## Princípios do bom conselho
 - Leia o modo: `modos/venda.md`, `modos/mentoria.md`, `modos/diagnostico.md`, `modos/geral.md`, `modos/entrevista.md`.
 - O conselho é sobre o **próximo movimento**, usando as palavras e os números do cliente.
@@ -68,6 +73,7 @@ Siga o `/reuniao-fim`: parar, ler a transcrição inteira, escrever o JSON do re
 
 ## Problemas comuns
 - **"Não estou ouvindo VOCÊ"**: o app da reunião usa outro microfone (headset, fone Bluetooth). No Windows: Configurações > Som > definir o microfone como **padrão de comunicação**. Rode `COP teste`.
+- **Presencial sem a voz da outra pessoa**: plugue uma webcam ou um microfone de mesa e use `--presencial`. Para conferir: `COP teste --presencial`.
 - **"Não estou ouvindo o CLIENTE"**: o som da reunião está saindo por uma saída não capturada. No Mac, sem o BlackHole e um Multi-Output Device o áudio do PC não chega (ver `instalar/instalar-mac.sh`).
 - **Transcrição atrasada / memória**: feche abas pesadas. O modo pago (`COP config transcricao deepgram`) quase não usa o PC.
 - **Ver a configuração**: `COP verificar`. **Status da sessão**: `COP status`.

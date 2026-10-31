@@ -16,7 +16,7 @@ from .vad import Segmentador
 class Motor:
     def __init__(self, sessao: Sessao, cfg: dict | None = None, arquivos: dict | None = None, velocidade: float = 1.0):
         self.sessao = sessao
-        self.cfg = cfg or config.carregar()
+        self.cfg = dict(cfg or config.carregar())
         self.chaves = config.chaves()
         self.arquivos = arquivos
         self.velocidade = velocidade
@@ -34,7 +34,11 @@ class Motor:
         for k in ("cliente", "empresa", "oferta"):
             if briefing.get(k):
                 self.vocabulario.append(briefing[k])
-        self.eco = filtros.FiltroEco(self._gravar, ativo=True, limiar=0.8 if self.cfg.get("fone", True) else 0.6)
+        self.cfg["presencial"] = briefing.get("presencial") or ""
+        if self.cfg["presencial"]:
+            self.eco = filtros.FiltroSala(self._gravar)
+        else:
+            self.eco = filtros.FiltroEco(self._gravar, ativo=True, limiar=0.8 if self.cfg.get("fone", True) else 0.6)
 
     # ---------------- alertas ----------------
     def alerta(self, tipo: str, msg: str, temporario: bool = False):
@@ -105,7 +109,10 @@ class Motor:
                 self.limpar_alerta("mic")
             cliente_mudo = (som_cliente and agora - som_cliente > 180) or (not som_cliente and rodando > 300)
             if cliente_mudo and voce_ativo:
-                self.alerta("cliente", "Não estou ouvindo o CLIENTE. O áudio da reunião está saindo por um fone/caixa que eu não estou escutando?")
+                if self.cfg["presencial"]:
+                    self.alerta("cliente", "Não estou ouvindo a outra pessoa. Aproxime o microfone da sala ou confira se ele está ligado.")
+                else:
+                    self.alerta("cliente", "Não estou ouvindo o CLIENTE. O áudio da reunião está saindo por um fone/caixa que eu não estou escutando?")
             elif som_cliente and agora - som_cliente < 10:
                 self.limpar_alerta("cliente")
         erro_audio = getattr(self.fonte, "erro", None)

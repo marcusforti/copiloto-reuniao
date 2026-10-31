@@ -97,6 +97,10 @@ Toda reunião usa esse perfil. Os conselhos citam os seus produtos e preços de 
 - As transcrições ficam em `~/CopilotoReuniao/sessoes/`, só no seu PC.
 - O copiloto não registra dados sensíveis (saúde, família, religião) nos conselhos nem no resumo.
 
+## Reunião presencial
+
+Com a pessoa na mesma sala, peça `/reuniao presencial` ou use `iniciar --presencial`. Você fica no fone, e uma webcam ou um microfone de mesa ouve a outra pessoa. O copiloto tira os trechos que o fone já transcreveu, mas não separa vozes: algumas falas suas ainda podem sair como da outra pessoa. Para testar: `teste --presencial`.
+
 ## Problemas comuns
 
 | Sintoma | Solução |

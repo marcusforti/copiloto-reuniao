@@ -22,6 +22,17 @@ BLOCO = 1600  # 100 ms
 
 VOCE, CLIENTE = "voce", "cliente"
 
+_NAO_E_SALA = ("cable", "blackhole", "voicemeeter", "stereo mix", "mixagem", "mapeador", "soundflower", "loopback")
+_BOM_PARA_SALA = ("cam", "usb", "conference", "speakerphone", "jabra", "anker", "emeet", "logitech", "poly")
+
+
+def escolher_sala(nomes: list, pedido: str, principal) -> str | None:
+    """Microfone da sala (modo presencial): o pedido pelo nome ou, em "auto", o melhor que não seja o principal nem virtual."""
+    if pedido != "auto":
+        return next((n for n in nomes if pedido in n.lower() and n != principal), None)
+    livres = [n for n in nomes if n != principal and not any(v in n.lower() for v in _NAO_E_SALA)]
+    return next((n for n in livres if any(b in n.lower() for b in _BOM_PARA_SALA)), livres[0] if livres else None)
+
 
 class _Reamostrador:
     def __init__(self, taxa_in: int):
@@ -236,6 +247,18 @@ class FonteWindows:
             stream_callback=cb,
         )
 
+    def _abrir_sala(self, pedido, mic):
+        """Presencial: o segundo microfone entra no canal CLIENTE e o áudio do PC não é ouvido."""
+        wasapi = self._wasapi()
+        cands = [self.p.get_device_info_by_index(i) for i in range(self.p.get_device_count())]
+        cands = {d["name"]: d for d in cands if d["hostApi"] == wasapi and d["maxInputChannels"] > 0 and not d.get("isLoopbackDevice")}
+        nome = escolher_sala(list(cands), pedido, mic["name"] if mic else None)
+        if not nome:
+            self.logar("modo presencial: não achei um segundo microfone")
+            return
+        self.loops["sala"] = self._abrir(cands[nome], CLIENTE, "sala")
+        self.dispositivos["saidas"] = [f"{nome} (microfone da sala)"]
+
     def _fechar_tudo(self):
         for s in [self.mic] + list(self.loops.values()):
             try:
@@ -264,6 +287,12 @@ class FonteWindows:
                 self.dispositivos["microfone"] = mic["name"]
             except Exception as e:
                 self.logar(f"falha ao abrir microfone {mic['name']}: {e}")
+        sala = (self.cfg.get("presencial") or "").lower()
+        if sala:
+            self._abrir_sala(sala, mic)
+            self.assinatura = self._assinatura()
+            self.logar(f"microfone: {self.dispositivos['microfone']} | sala: {', '.join(self.dispositivos['saidas']) or 'nenhum'}")
+            return
         pedido = (self.cfg.get("saida") or "auto").lower()
         saidas = []
         for lb in self.p.get_loopback_device_info_generator():
@@ -324,6 +353,8 @@ class FonteWindows:
             try:
                 self._abrir_tudo()
                 self.erro = None if self.mic else "Não consegui abrir nenhum microfone."
+                if self.mic and self.cfg.get("presencial") and not self.loops:
+                    self.erro = "Modo presencial: não achei um segundo microfone. Plugue a webcam ou um microfone de mesa."
                 break
             except Exception as e:
                 self.erro = f"Não consegui abrir o áudio ({e}). Tentando de novo…"
@@ -343,6 +374,10 @@ class FonteWindows:
 # --------------------------------------------------------------------------------------
 # Mac (sounddevice + BlackHole)
 # --------------------------------------------------------------------------------------
+def entradas_idx(devs, nome: str) -> int:
+    return next(i for i, d in enumerate(devs) if d["name"] == nome and d["max_input_channels"] > 0)
+
+
 class FonteMac:
     def __init__(self, mixer: Mixer, cfg: dict, logar=print):
         import sounddevice as sd
@@ -390,6 +425,17 @@ class FonteMac:
                 break
         if mic_idx is not None and mic_idx >= 0 and mic_idx != bh:
             self.dispositivos["microfone"] = self._abrir(mic_idx, VOCE, "mic")
+        pedido_sala = (self.cfg.get("presencial") or "").lower()
+        if pedido_sala:
+            entradas = [d["name"] for d in devs if d["max_input_channels"] > 0]
+            nome = escolher_sala(entradas, pedido_sala, self.dispositivos["microfone"])
+            if nome:
+                aberto = self._abrir(entradas_idx(devs, nome), CLIENTE, "sala")
+                self.dispositivos["saidas"] = [f"{aberto} (microfone da sala)"]
+            else:
+                self.logar("modo presencial: não achei um segundo microfone")
+            self.logar(f"microfone: {self.dispositivos['microfone']} | sala: {self.dispositivos['saidas']}")
+            return
         if bh is not None:
             self.dispositivos["saidas"] = [self._abrir(bh, CLIENTE, "blackhole")]
         else:
@@ -412,6 +458,8 @@ class FonteMac:
             try:
                 self._abrir_tudo()
                 self.erro = None if self.dispositivos.get("microfone") else "Não consegui abrir o microfone."
+                if self.dispositivos.get("microfone") and self.cfg.get("presencial") and not self.dispositivos.get("saidas"):
+                    self.erro = "Modo presencial: não achei um segundo microfone. Plugue a webcam ou um microfone de mesa."
                 break
             except Exception as e:  # ex.: permissão de microfone negada nos Ajustes do Mac
                 self.erro = f"Não consegui abrir o áudio ({e}). Confira em Ajustes > Privacidade > Microfone se o Terminal tem permissão."

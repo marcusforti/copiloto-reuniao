@@ -178,6 +178,7 @@ def cmd_teste(a):
     from cop.audio import CLIENTE, VOCE, Mixer, criar_fonte
 
     cfg = config.carregar()
+    cfg["presencial"] = a.presencial or ""
     picos = {VOCE: -90.0, CLIENTE: -90.0}
     audio_mic = []
 
@@ -210,7 +211,10 @@ def cmd_teste(a):
     resultado = {"microfone": fonte.dispositivos.get("microfone"), "saidas": fonte.dispositivos.get("saidas"), "pico_voce_db": round(float(picos[VOCE]), 1), "pico_cliente_db": round(float(picos[CLIENTE]), 1), "mic_ok": ok_mic, "saida_ok": ok_saida}
     print("\nResultado:")
     print(f"  Microfone: {'OK ✔' if ok_mic else 'SEM SOM ✘ — confira se o microfone certo está como padrão de COMUNICAÇÃO no Windows (ou no Mac), ou se está no mudo'}")
-    print(f"  Áudio do PC (cliente): {'OK ✔' if ok_saida else 'SEM SOM ✘ — o som do PC não chegou. No Mac: BlackHole + Multi-Output. No Windows: confira o volume/saída.'}")
+    if a.presencial:
+        print(f"  Microfone da sala: {'OK ✔' if ok_saida else 'SEM SOM ✘ — confira se a webcam ou o microfone de mesa está ligado e perto de vocês.'}")
+    else:
+        print(f"  Áudio do PC (cliente): {'OK ✔' if ok_saida else 'SEM SOM ✘ — o som do PC não chegou. No Mac: BlackHole + Multi-Output. No Windows: confira o volume/saída.'}")
     if ok_mic and a.transcrever and audio_mic:
         try:
             from cop.sistema import escolher_modelo
@@ -342,6 +346,7 @@ def cmd_iniciar(a):
         "preco": a.preco or "",
         "contexto": a.contexto or "",
         "vocabulario": [v.strip() for v in (a.vocabulario or "").split(",") if v.strip()],
+        "presencial": a.presencial or "",
         "perfil": str(config.PASTA_PERFIL / "perfil.md") if (config.PASTA_PERFIL / "perfil.md").exists() else "",
         "criado": time.strftime("%Y-%m-%d %H:%M"),
     }
@@ -647,6 +652,7 @@ def main():
     x.add_argument("--segundos", type=int, default=8)
     x.add_argument("--transcrever", action="store_true")
     x.add_argument("--json", action="store_true")
+    x.add_argument("--presencial", nargs="?", const="auto", help="testa também o microfone da sala")
     x.set_defaults(f=cmd_teste)
     x = sub.add_parser("config")
     x.add_argument("chave", nargs="?")
@@ -664,6 +670,7 @@ def main():
     x.add_argument("--transcricao", choices=["local", "deepgram", "soniox"])
     x.add_argument("--cerebro", choices=["claude-code", "api"])
     x.add_argument("--sem-fone", action="store_true")
+    x.add_argument("--presencial", nargs="?", const="auto", help="reunião na mesma sala: usa um segundo microfone (webcam ou de mesa) como canal da outra pessoa; pode receber parte do nome dele")
     x.add_argument("--sem-painel", action="store_true")
     x.add_argument("--espera", type=int)
     x.set_defaults(f=cmd_iniciar)

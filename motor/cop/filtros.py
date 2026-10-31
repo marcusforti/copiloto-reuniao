@@ -139,3 +139,56 @@ class FiltroEco:
     def descarregar(self):
         self.espera_s = 0
         self.tick()
+
+
+def tirar_repetido(texto: str, referencias: list, minimo: int = 3) -> str:
+    """Apaga do texto os trechos de `minimo` palavras ou mais que já aparecem em alguma referência."""
+    palavras = texto.split()
+    norm = [_norm(p) for p in palavras]
+    manter = [True] * len(palavras)
+    for ref in referencias:
+        m = SequenceMatcher(None, norm, _norm(ref).split(), autojunk=False)
+        for bl in m.get_matching_blocks():
+            if bl.size >= minimo:
+                manter[bl.a : bl.a + bl.size] = [False] * bl.size
+    return " ".join(p for p, k in zip(palavras, manter) if k)
+
+
+class FiltroSala:
+    """Presencial: o microfone da sala também pega a voz de quem está de fone, às vezes na mesma frase da outra pessoa.
+    A fala do VOCÊ sai direto. A da sala espera alguns segundos e perde os trechos que o fone já transcreveu."""
+
+    def __init__(self, emitir, espera_s: float = 4.0, janela_s: float = 45.0):
+        self.emitir = emitir  # fn(canal, texto, ts)
+        self.espera_s = espera_s
+        self.janela_s = janela_s
+        self.voce = deque(maxlen=60)
+        self.pendentes = deque()
+        self.trava = threading.Lock()
+        self.descartadas = 0
+
+    def entrada(self, canal: str, texto: str, ts: float) -> None:
+        with self.trava:
+            if canal == "cliente":
+                self.pendentes.append((time.time(), texto, ts))
+            else:
+                self.voce.append((ts, texto))
+                self.emitir(canal, texto, ts)
+        self.tick()
+
+    def tick(self) -> None:
+        agora = time.time()
+        with self.trava:
+            while self.pendentes and agora - self.pendentes[0][0] >= self.espera_s:
+                _, texto, ts = self.pendentes.popleft()
+                refs = [t for tv, t in self.voce if abs(tv - ts) <= self.janela_s]
+                resto = tirar_repetido(texto, refs)
+                igual = any(_norm(texto) == _norm(r) for r in refs)
+                if igual or (resto != texto and len(_norm(resto).split()) < 2):
+                    self.descartadas += 1
+                else:
+                    self.emitir("cliente", resto, ts)
+
+    def descarregar(self):
+        self.espera_s = 0
+        self.tick()
